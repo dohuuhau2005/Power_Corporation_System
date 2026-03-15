@@ -1,0 +1,18 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq_server
+    ports:
+      - "5673:5672"   # Port chính để code backend kết nối vào gửi/nhận message
+      - "15673:15672" # Port cho cái giao diện UI giống Redis Insight
+    environment:
+      # Đổi tài khoản mặc định ở đây (tùy ý ông)
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=123456
+    volumes:
+      # Map ổ cứng để lưu data, tắt Docker không bị mất Queue
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped # Tự động chạy lại nếu container bị crash hoặc restart máy
+
+volumes:
+  rabbitmq_data:
