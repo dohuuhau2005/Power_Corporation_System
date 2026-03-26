@@ -3,12 +3,19 @@
 --TP1 : NV1 123456
 --TP2 : NV2 123456
 
+ALTER SESSION SET CONTAINER = TP1;
+ALTER SESSION SET CURRENT_SCHEMA = db_dienlucCN1;
+
+ALTER SESSION SET CURRENT_SCHEMA = db_dienlucCN3;
+ALTER SESSION SET CONTAINER = TP2;
+ALTER SESSION SET CURRENT_SCHEMA = db_dienlucCN2;
+
+ALTER SESSION SET CURRENT_SCHEMA = db_dienlucCN4;
+ALTER SESSION SET CONTAINER = TongBo;
+ALTER SESSION SET CURRENT_SCHEMA = db_dienluc;
 
 
-
-
-
-
+select * from nhanvien;
 
 
 create database UsersCsdlPt;
@@ -78,7 +85,7 @@ CREATE TABLE hoadon (
     soHD VARCHAR(26),
     maNV VARCHAR(20),--khong can khoa ngoai
     soTien int, 
-    thanhToan bit default 0;
+
     FOREIGN KEY (soHD) REFERENCES hopdong(soHD),
 
 );
@@ -218,6 +225,7 @@ CREATE TABLE khachhang (
     maKH VARCHAR2(20) PRIMARY KEY,
     tenKH NVARCHAR2(255) NOT NULL,
     maCN VARCHAR2(20),
+    SDT VARCHAR2(15) UNIQUE,
     FOREIGN KEY (maCN) REFERENCES chinhanh(maCN)
 ) TABLESPACE DIENLUCTONG;
 
@@ -314,6 +322,7 @@ CREATE TABLE khachhang (
     maKH VARCHAR2(20) PRIMARY KEY,
     tenKH NVARCHAR2(255) NOT NULL,
     maCN VARCHAR2(20),
+    SDT VARCHAR2(15) UNIQUE,
     FOREIGN KEY (maCN) REFERENCES chinhanh(maCN)
 ) ;
 
@@ -415,14 +424,16 @@ CREATE TABLE nhanvien (
     maNV VARCHAR2(20) PRIMARY KEY,
     hoten NVARCHAR2(255) NOT NULL,
     maCN VARCHAR2(20),
+    islocked NUMBER(1) DEFAULT 0,
     FOREIGN KEY (maCN) REFERENCES chinhanh(maCN)
 ) ;
 
 -- 3. Bảng khachhang
 CREATE TABLE khachhang (
-    maKH VARCHAR2(20) PRIMARY KEY,
+    maKH VARCHAR2(26) PRIMARY KEY,
     tenKH NVARCHAR2(255) NOT NULL,
     maCN VARCHAR2(20),
+    SDT VARCHAR2(15) UNIQUE,
     FOREIGN KEY (maCN) REFERENCES chinhanh(maCN)
 ) ;
 
@@ -430,7 +441,7 @@ CREATE TABLE khachhang (
 CREATE TABLE hopdong (
     soHD VARCHAR2(26) PRIMARY KEY,
     ngayKy DATE DEFAULT SYSDATE,
-    maKH VARCHAR2(20), -- Không khóa ngoại như bạn dặn
+    maKH VARCHAR2(26), -- Không khóa ngoại như bạn dặn
     soDienKe VARCHAR2(50),
     kwDinhMuc NUMBER,
     dongiaKW NUMBER, 
@@ -465,3 +476,512 @@ USING '//localhost:1521/TP2';
 CREATE DATABASE LINK link_to_cn4
 CONNECT TO db_dienlucCN4 IDENTIFIED BY "123456"
 USING '//localhost:1521/TP2';
+
+
+
+--proxy authentication
+ALTER SESSION SET CONTAINER = CDB$ROOT;
+
+-- Tạo Common User, nó sẽ tự động tàng hình có mặt ở mọi PDB (TP1, TP2, TongBo)
+CREATE USER c##api_gateway IDENTIFIED BY "SuperApiPass123" CONTAINER=ALL;
+GRANT CREATE SESSION TO c##api_gateway CONTAINER=ALL;
+--đóng giả
+ALTER SESSION SET CONTAINER = TP1;
+
+ALTER USER db_dienlucCN1 GRANT CONNECT THROUGH c##api_gateway;
+ALTER USER db_dienlucCN3 GRANT CONNECT THROUGH c##api_gateway;
+ALTER SESSION SET CONTAINER = TP2;
+
+ALTER USER db_dienlucCN2 GRANT CONNECT THROUGH c##api_gateway;
+ALTER USER db_dienlucCN4 GRANT CONNECT THROUGH c##api_gateway;
+
+--them
+--bang nhanvien
+ ALTER table nhanvien add islocked NUMBER(1) DEFAULT 0;
+-- Chạy cho db_dienlucCN1, CN2, CN3, CN4
+ALTER TABLE khachhang MODIFY maKH VARCHAR2(26);
+ALTER TABLE hopdong MODIFY maKH VARCHAR2(26);
+
+
+ALTER SESSION SET CONTAINER = TongBo;
+ALTER SESSION SET CURRENT_SCHEMA = db_dienluc;
+
+CREATE OR REPLACE TRIGGER trg_sync_chinhanh
+AFTER INSERT OR UPDATE OR DELETE ON chinhanh
+FOR EACH ROW
+DECLARE
+    v_maCN VARCHAR2(20);
+BEGIN
+    -- Xác định mã chi nhánh: Nếu XÓA thì lấy data cũ, ngược lại lấy data mới
+    IF DELETING THEN v_maCN := :OLD.maCN; ELSE v_maCN := :NEW.maCN; END IF;
+
+    IF v_maCN = 'CN1' THEN
+        IF INSERTING THEN
+            INSERT INTO chinhanh@link_to_cn1 (maCN, tenCN, thanhpho) VALUES (:NEW.maCN, :NEW.tenCN, :NEW.thanhpho);
+        ELSIF UPDATING THEN
+            UPDATE chinhanh@link_to_cn1 SET tenCN = :NEW.tenCN, thanhpho = :NEW.thanhpho WHERE maCN = :OLD.maCN;
+        ELSIF DELETING THEN
+            DELETE FROM chinhanh@link_to_cn1 WHERE maCN = :OLD.maCN;
+        END IF;
+    ELSIF v_maCN = 'CN2' THEN
+        IF INSERTING THEN INSERT INTO chinhanh@link_to_cn2 (maCN, tenCN, thanhpho) VALUES (:NEW.maCN, :NEW.tenCN, :NEW.thanhpho);
+        ELSIF UPDATING THEN UPDATE chinhanh@link_to_cn2 SET tenCN = :NEW.tenCN, thanhpho = :NEW.thanhpho WHERE maCN = :OLD.maCN;
+        ELSIF DELETING THEN DELETE FROM chinhanh@link_to_cn2 WHERE maCN = :OLD.maCN; END IF;
+    ELSIF v_maCN = 'CN3' THEN
+        IF INSERTING THEN INSERT INTO chinhanh@link_to_cn3 (maCN, tenCN, thanhpho) VALUES (:NEW.maCN, :NEW.tenCN, :NEW.thanhpho);
+        ELSIF UPDATING THEN UPDATE chinhanh@link_to_cn3 SET tenCN = :NEW.tenCN, thanhpho = :NEW.thanhpho WHERE maCN = :OLD.maCN;
+        ELSIF DELETING THEN DELETE FROM chinhanh@link_to_cn3 WHERE maCN = :OLD.maCN; END IF;
+    ELSIF v_maCN = 'CN4' THEN
+        IF INSERTING THEN INSERT INTO chinhanh@link_to_cn4 (maCN, tenCN, thanhpho) VALUES (:NEW.maCN, :NEW.tenCN, :NEW.thanhpho);
+        ELSIF UPDATING THEN UPDATE chinhanh@link_to_cn4 SET tenCN = :NEW.tenCN, thanhpho = :NEW.thanhpho WHERE maCN = :OLD.maCN;
+        ELSIF DELETING THEN DELETE FROM chinhanh@link_to_cn4 WHERE maCN = :OLD.maCN; END IF;
+    END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_sync_nhanvien
+AFTER INSERT OR UPDATE OR DELETE ON nhanvien
+FOR EACH ROW
+DECLARE
+    v_maCN VARCHAR2(20);
+BEGIN
+    IF DELETING THEN v_maCN := :OLD.maCN; ELSE v_maCN := :NEW.maCN; END IF;
+
+    IF v_maCN = 'CN1' THEN
+        IF INSERTING THEN
+            INSERT INTO nhanvien@link_to_cn1 (maNV, hoten, maCN, status) VALUES (:NEW.maNV, :NEW.hoten, :NEW.maCN, :NEW.status);
+        ELSIF UPDATING THEN
+            UPDATE nhanvien@link_to_cn1 SET hoten = :NEW.hoten, maCN = :NEW.maCN, status = :NEW.status WHERE maNV = :OLD.maNV;
+        ELSIF DELETING THEN
+            DELETE FROM nhanvien@link_to_cn1 WHERE maNV = :OLD.maNV;
+        END IF;
+        
+    ELSIF v_maCN = 'CN2' THEN
+        IF INSERTING THEN 
+            INSERT INTO nhanvien@link_to_cn2 (maNV, hoten, maCN, status) VALUES (:NEW.maNV, :NEW.hoten, :NEW.maCN, :NEW.status);
+        ELSIF UPDATING THEN 
+            UPDATE nhanvien@link_to_cn2 SET hoten = :NEW.hoten, maCN = :NEW.maCN, status = :NEW.status WHERE maNV = :OLD.maNV;
+        ELSIF DELETING THEN 
+            DELETE FROM nhanvien@link_to_cn2 WHERE maNV = :OLD.maNV; 
+        END IF;
+        
+    ELSIF v_maCN = 'CN3' THEN
+        IF INSERTING THEN 
+            INSERT INTO nhanvien@link_to_cn3 (maNV, hoten, maCN, status) VALUES (:NEW.maNV, :NEW.hoten, :NEW.maCN, :NEW.status);
+        ELSIF UPDATING THEN 
+            UPDATE nhanvien@link_to_cn3 SET hoten = :NEW.hoten, maCN = :NEW.maCN, status = :NEW.status WHERE maNV = :OLD.maNV;
+        ELSIF DELETING THEN 
+            DELETE FROM nhanvien@link_to_cn3 WHERE maNV = :OLD.maNV; 
+        END IF;
+        
+    ELSIF v_maCN = 'CN4' THEN
+        IF INSERTING THEN 
+            INSERT INTO nhanvien@link_to_cn4 (maNV, hoten, maCN, status) VALUES (:NEW.maNV, :NEW.hoten, :NEW.maCN, :NEW.status);
+        ELSIF UPDATING THEN 
+            UPDATE nhanvien@link_to_cn4 SET hoten = :NEW.hoten, maCN = :NEW.maCN, status = :NEW.status WHERE maNV = :OLD.maNV;
+        ELSIF DELETING THEN 
+            DELETE FROM nhanvien@link_to_cn4 WHERE maNV = :OLD.maNV; 
+        END IF;
+        
+    END IF;
+END;
+/
+CREATE OR REPLACE TRIGGER trg_sync_khachhang
+AFTER INSERT OR UPDATE OR DELETE ON khachhang
+FOR EACH ROW
+BEGIN
+    -- ==========================================
+    -- 1. TRƯỜNG HỢP THÊM MỚI (INSERT)
+    -- ==========================================
+    IF INSERTING THEN
+        IF :NEW.maCN = 'CN1' THEN INSERT INTO khachhang@link_to_cn1 (maKH, tenKH, maCN, SDT) VALUES (:NEW.maKH, :NEW.tenKH, :NEW.maCN, :NEW.SDT);
+        ELSIF :NEW.maCN = 'CN2' THEN INSERT INTO khachhang@link_to_cn2 (maKH, tenKH, maCN, SDT) VALUES (:NEW.maKH, :NEW.tenKH, :NEW.maCN, :NEW.SDT);
+        ELSIF :NEW.maCN = 'CN3' THEN INSERT INTO khachhang@link_to_cn3 (maKH, tenKH, maCN, SDT) VALUES (:NEW.maKH, :NEW.tenKH, :NEW.maCN, :NEW.SDT);
+        ELSIF :NEW.maCN = 'CN4' THEN INSERT INTO khachhang@link_to_cn4 (maKH, tenKH, maCN, SDT) VALUES (:NEW.maKH, :NEW.tenKH, :NEW.maCN, :NEW.SDT);
+        END IF;
+
+    -- ==========================================
+    -- 2. TRƯỜNG HỢP XÓA (DELETE)
+    -- ==========================================
+    ELSIF DELETING THEN
+        IF :OLD.maCN = 'CN1' THEN DELETE FROM khachhang@link_to_cn1 WHERE maKH = :OLD.maKH;
+        ELSIF :OLD.maCN = 'CN2' THEN DELETE FROM khachhang@link_to_cn2 WHERE maKH = :OLD.maKH;
+        ELSIF :OLD.maCN = 'CN3' THEN DELETE FROM khachhang@link_to_cn3 WHERE maKH = :OLD.maKH;
+        ELSIF :OLD.maCN = 'CN4' THEN DELETE FROM khachhang@link_to_cn4 WHERE maKH = :OLD.maKH;
+        END IF;
+
+    -- ==========================================
+    -- 3. TRƯỜNG HỢP SỬA (UPDATE) - CÓ BẮT LOGIC ĐỔI CHI NHÁNH
+    -- ==========================================
+    ELSIF UPDATING THEN
+        -- Kịch bản 3.1: Không đổi chi nhánh, chỉ sửa Tên hoặc SDT
+        IF :OLD.maCN = :NEW.maCN THEN
+            IF :NEW.maCN = 'CN1' THEN UPDATE khachhang@link_to_cn1 SET tenKH = :NEW.tenKH, SDT = :NEW.SDT WHERE maKH = :OLD.maKH;
+            ELSIF :NEW.maCN = 'CN2' THEN UPDATE khachhang@link_to_cn2 SET tenKH = :NEW.tenKH, SDT = :NEW.SDT WHERE maKH = :OLD.maKH;
+            ELSIF :NEW.maCN = 'CN3' THEN UPDATE khachhang@link_to_cn3 SET tenKH = :NEW.tenKH, SDT = :NEW.SDT WHERE maKH = :OLD.maKH;
+            ELSIF :NEW.maCN = 'CN4' THEN UPDATE khachhang@link_to_cn4 SET tenKH = :NEW.tenKH, SDT = :NEW.SDT WHERE maKH = :OLD.maKH;
+            END IF;
+            
+        -- Kịch bản 3.2: Khách hàng chuyển sang Chi nhánh khác
+        ELSE
+            -- BƯỚC A: Trảm (Delete) dữ liệu ở Chi nhánh cũ
+            IF :OLD.maCN = 'CN1' THEN DELETE FROM khachhang@link_to_cn1 WHERE maKH = :OLD.maKH;
+            ELSIF :OLD.maCN = 'CN2' THEN DELETE FROM khachhang@link_to_cn2 WHERE maKH = :OLD.maKH;
+            ELSIF :OLD.maCN = 'CN3' THEN DELETE FROM khachhang@link_to_cn3 WHERE maKH = :OLD.maKH;
+            ELSIF :OLD.maCN = 'CN4' THEN DELETE FROM khachhang@link_to_cn4 WHERE maKH = :OLD.maKH;
+            END IF;
+
+            -- BƯỚC B: Bứng (Insert) cục dữ liệu mới sang Chi nhánh mới
+            IF :NEW.maCN = 'CN1' THEN INSERT INTO khachhang@link_to_cn1 (maKH, tenKH, maCN, SDT) VALUES (:NEW.maKH, :NEW.tenKH, :NEW.maCN, :NEW.SDT);
+            ELSIF :NEW.maCN = 'CN2' THEN INSERT INTO khachhang@link_to_cn2 (maKH, tenKH, maCN, SDT) VALUES (:NEW.maKH, :NEW.tenKH, :NEW.maCN, :NEW.SDT);
+            ELSIF :NEW.maCN = 'CN3' THEN INSERT INTO khachhang@link_to_cn3 (maKH, tenKH, maCN, SDT) VALUES (:NEW.maKH, :NEW.tenKH, :NEW.maCN, :NEW.SDT);
+            ELSIF :NEW.maCN = 'CN4' THEN INSERT INTO khachhang@link_to_cn4 (maKH, tenKH, maCN, SDT) VALUES (:NEW.maKH, :NEW.tenKH, :NEW.maCN, :NEW.SDT);
+            END IF;
+        END IF;
+    END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_sync_hopdong
+AFTER INSERT OR UPDATE OR DELETE ON hopdong
+FOR EACH ROW
+DECLARE
+    v_maCN VARCHAR2(20);
+    v_maKH VARCHAR2(26); -- Chứa ULID
+BEGIN
+    -- Xác định mã KH tùy theo hành động
+    IF DELETING THEN v_maKH := :OLD.maKH; ELSE v_maKH := :NEW.maKH; END IF;
+
+    -- Truy vấn lấy mã Chi nhánh
+    SELECT maCN INTO v_maCN FROM khachhang WHERE maKH = v_maKH;
+
+    IF v_maCN = 'CN1' THEN
+        IF INSERTING THEN
+            INSERT INTO hopdong@link_to_cn1 (soHD, ngayKy, maKH, soDienKe, kwDinhMuc, dongiaKW, isPaid) VALUES (:NEW.soHD, :NEW.ngayKy, :NEW.maKH, :NEW.soDienKe, :NEW.kwDinhMuc, :NEW.dongiaKW, :NEW.isPaid);
+        ELSIF UPDATING THEN
+            UPDATE hopdong@link_to_cn1 SET ngayKy = :NEW.ngayKy, maKH = :NEW.maKH, soDienKe = :NEW.soDienKe, kwDinhMuc = :NEW.kwDinhMuc, dongiaKW = :NEW.dongiaKW, isPaid = :NEW.isPaid WHERE soHD = :OLD.soHD;
+        ELSIF DELETING THEN
+            DELETE FROM hopdong@link_to_cn1 WHERE soHD = :OLD.soHD;
+        END IF;
+    ELSIF v_maCN = 'CN2' THEN
+        IF INSERTING THEN INSERT INTO hopdong@link_to_cn2 (soHD, ngayKy, maKH, soDienKe, kwDinhMuc, dongiaKW, isPaid) VALUES (:NEW.soHD, :NEW.ngayKy, :NEW.maKH, :NEW.soDienKe, :NEW.kwDinhMuc, :NEW.dongiaKW, :NEW.isPaid);
+        ELSIF UPDATING THEN UPDATE hopdong@link_to_cn2 SET ngayKy = :NEW.ngayKy, maKH = :NEW.maKH, soDienKe = :NEW.soDienKe, kwDinhMuc = :NEW.kwDinhMuc, dongiaKW = :NEW.dongiaKW, isPaid = :NEW.isPaid WHERE soHD = :OLD.soHD;
+        ELSIF DELETING THEN DELETE FROM hopdong@link_to_cn2 WHERE soHD = :OLD.soHD; END IF;
+    ELSIF v_maCN = 'CN3' THEN
+        IF INSERTING THEN INSERT INTO hopdong@link_to_cn3 (soHD, ngayKy, maKH, soDienKe, kwDinhMuc, dongiaKW, isPaid) VALUES (:NEW.soHD, :NEW.ngayKy, :NEW.maKH, :NEW.soDienKe, :NEW.kwDinhMuc, :NEW.dongiaKW, :NEW.isPaid);
+        ELSIF UPDATING THEN UPDATE hopdong@link_to_cn3 SET ngayKy = :NEW.ngayKy, maKH = :NEW.maKH, soDienKe = :NEW.soDienKe, kwDinhMuc = :NEW.kwDinhMuc, dongiaKW = :NEW.dongiaKW, isPaid = :NEW.isPaid WHERE soHD = :OLD.soHD;
+        ELSIF DELETING THEN DELETE FROM hopdong@link_to_cn3 WHERE soHD = :OLD.soHD; END IF;
+    ELSIF v_maCN = 'CN4' THEN
+        IF INSERTING THEN INSERT INTO hopdong@link_to_cn4 (soHD, ngayKy, maKH, soDienKe, kwDinhMuc, dongiaKW, isPaid) VALUES (:NEW.soHD, :NEW.ngayKy, :NEW.maKH, :NEW.soDienKe, :NEW.kwDinhMuc, :NEW.dongiaKW, :NEW.isPaid);
+        ELSIF UPDATING THEN UPDATE hopdong@link_to_cn4 SET ngayKy = :NEW.ngayKy, maKH = :NEW.maKH, soDienKe = :NEW.soDienKe, kwDinhMuc = :NEW.kwDinhMuc, dongiaKW = :NEW.dongiaKW, isPaid = :NEW.isPaid WHERE soHD = :OLD.soHD;
+        ELSIF DELETING THEN DELETE FROM hopdong@link_to_cn4 WHERE soHD = :OLD.soHD; END IF;
+    END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_sync_hoadon
+AFTER INSERT OR UPDATE OR DELETE ON hoadon
+FOR EACH ROW
+DECLARE
+    v_maCN VARCHAR2(20);
+    v_maNV VARCHAR2(20);
+BEGIN
+    -- Xác định mã nhân viên
+    IF DELETING THEN v_maNV := :OLD.maNV; ELSE v_maNV := :NEW.maNV; END IF;
+
+    -- Tìm xem nhân viên này ở chi nhánh nào
+    SELECT maCN INTO v_maCN FROM nhanvien WHERE maNV = v_maNV;
+
+    IF v_maCN = 'CN1' THEN
+        IF INSERTING THEN
+            INSERT INTO hoadon@link_to_cn1 (soHDN, thang, nam, soHD, maNV, soTien) 
+            VALUES (:NEW.soHDN, :NEW.thang, :NEW.nam, :NEW.soHD, :NEW.maNV, :NEW.soTien);
+        ELSIF UPDATING THEN
+            UPDATE hoadon@link_to_cn1 SET thang = :NEW.thang, nam = :NEW.nam, soHD = :NEW.soHD, maNV = :NEW.maNV, soTien = :NEW.soTien WHERE soHDN = :OLD.soHDN;
+        ELSIF DELETING THEN
+            DELETE FROM hoadon@link_to_cn1 WHERE soHDN = :OLD.soHDN;
+        END IF;
+        
+    ELSIF v_maCN = 'CN2' THEN
+        IF INSERTING THEN 
+            INSERT INTO hoadon@link_to_cn2 (soHDN, thang, nam, soHD, maNV, soTien) 
+            VALUES (:NEW.soHDN, :NEW.thang, :NEW.nam, :NEW.soHD, :NEW.maNV, :NEW.soTien);
+        ELSIF UPDATING THEN 
+            UPDATE hoadon@link_to_cn2 SET thang = :NEW.thang, nam = :NEW.nam, soHD = :NEW.soHD, maNV = :NEW.maNV, soTien = :NEW.soTien WHERE soHDN = :OLD.soHDN;
+        ELSIF DELETING THEN 
+            DELETE FROM hoadon@link_to_cn2 WHERE soHDN = :OLD.soHDN; 
+        END IF;
+        
+    ELSIF v_maCN = 'CN3' THEN
+        IF INSERTING THEN 
+            INSERT INTO hoadon@link_to_cn3 (soHDN, thang, nam, soHD, maNV, soTien) 
+            VALUES (:NEW.soHDN, :NEW.thang, :NEW.nam, :NEW.soHD, :NEW.maNV, :NEW.soTien);
+        ELSIF UPDATING THEN 
+            UPDATE hoadon@link_to_cn3 SET thang = :NEW.thang, nam = :NEW.nam, soHD = :NEW.soHD, maNV = :NEW.maNV, soTien = :NEW.soTien WHERE soHDN = :OLD.soHDN;
+        ELSIF DELETING THEN 
+            DELETE FROM hoadon@link_to_cn3 WHERE soHDN = :OLD.soHDN; 
+        END IF;
+        
+    ELSIF v_maCN = 'CN4' THEN
+        IF INSERTING THEN 
+            INSERT INTO hoadon@link_to_cn4 (soHDN, thang, nam, soHD, maNV, soTien) 
+            VALUES (:NEW.soHDN, :NEW.thang, :NEW.nam, :NEW.soHD, :NEW.maNV, :NEW.soTien);
+        ELSIF UPDATING THEN 
+            UPDATE hoadon@link_to_cn4 SET thang = :NEW.thang, nam = :NEW.nam, soHD = :NEW.soHD, maNV = :NEW.maNV, soTien = :NEW.soTien WHERE soHDN = :OLD.soHDN;
+        ELSIF DELETING THEN 
+            DELETE FROM hoadon@link_to_cn4 WHERE soHDN = :OLD.soHDN; 
+        END IF;
+        
+    END IF;
+END;
+/
+
+-- Đảm bảo đang đứng ở Tổng Bộ và dùng đúng tài khoản
+ALTER SESSION SET CONTAINER = TongBo;
+ALTER SESSION SET CURRENT_SCHEMA = db_dienluc;
+
+-- Đảm bảo đang đứng ở Tổng Bộ
+ALTER SESSION SET CONTAINER = TongBo;
+ALTER SESSION SET CURRENT_SCHEMA = db_dienluc;
+
+-- ==============================================================================
+-- 1. BẢNG CHI NHÁNH
+-- (Nếu ông đã có CN1, CN2, CN3, CN4 rồi thì BỎ QUA đoạn này để khỏi lỗi ORA-00001)
+-- ==============================================================================
+INSERT INTO chinhanh (maCN, tenCN, thanhpho) VALUES ('CN1', N'Công ty Điện lực Quận 1', 'TP1');
+INSERT INTO chinhanh (maCN, tenCN, thanhpho) VALUES ('CN2', N'Công ty Điện lực Quận Ninh Kiều', 'TP2');
+INSERT INTO chinhanh (maCN, tenCN, thanhpho) VALUES ('CN3', N'Công ty Điện lực Quận 3', 'TP1');
+INSERT INTO chinhanh (maCN, tenCN, thanhpho) VALUES ('CN4', N'Công ty Điện lực Quận Cái Răng', 'TP2');
+
+-- ==============================================================================
+-- 2. BẢNG NHÂN VIÊN (Mã NV phân bổ thực tế)
+-- ==============================================================================
+INSERT INTO nhanvien (maNV, hoten, maCN, islocked) 
+VALUES ('NV_101', N'Nguyễn Hoàng Minh', 'CN1', 0);
+
+INSERT INTO nhanvien (maNV, hoten, maCN, islocked) 
+VALUES ('NV_201', N'Trần Thị Thanh Trúc', 'CN2', 0);
+
+INSERT INTO nhanvien (maNV, hoten, maCN, islocked) 
+VALUES ('NV_301', N'Phạm Lê Thái Bình', 'CN3', 0);
+
+INSERT INTO nhanvien (maNV, hoten, maCN, islocked) 
+VALUES ('NV_401', N'Lê Minh Hoàng', 'CN4', 0);
+
+-- ==============================================================================
+-- 3. BẢNG KHÁCH HÀNG (Mã khách hàng dùng chuẩn ULID 26 ký tự)
+-- ==============================================================================
+INSERT INTO khachhang (maKH, tenKH, maCN) 
+VALUES ('01HT3A1B2C3D4E5F6G7H8J9K0M', N'Công ty CP Đầu tư Nam Long', 'CN1');
+
+INSERT INTO khachhang (maKH, tenKH, maCN) 
+VALUES ('01HT3A2B3C4D5E6F7G8H9J0K1M', N'Nguyễn Văn Toàn', 'CN2');
+
+INSERT INTO khachhang (maKH, tenKH, maCN) 
+VALUES ('01HT3A3B4C5D6E7F8G9H0J1K2M', N'Bệnh viện Đa khoa Quốc tế', 'CN3');
+
+INSERT INTO khachhang (maKH, tenKH, maCN) 
+VALUES ('01HT3A4B5C6D7E8F9G0H1J2K3M', N'Trần Đại Nghĩa', 'CN4');
+
+-- ==============================================================================
+-- 4. BẢNG HỢP ĐỒNG (Mã Hợp đồng dùng chuẩn ULID, nối đúng ULID Khách hàng ở trên)
+-- Dữ liệu giả định: Định mức 400 kWh, đơn giá bậc thang trung bình 3100 VNĐ
+-- ==============================================================================
+INSERT INTO hopdong (soHD, ngayKy, maKH, soDienKe, kwDinhMuc, dongiaKW, isPaid) 
+VALUES ('01HT3B1C2D3E4F5G6H7J8K9M0N', TO_DATE('2025-10-15', 'YYYY-MM-DD'), '01HT3A1B2C3D4E5F6G7H8J9K0M', 'DK_Q1_00892', 400, 3100, 1);
+
+INSERT INTO hopdong (soHD, ngayKy, maKH, soDienKe, kwDinhMuc, dongiaKW, isPaid) 
+VALUES ('01HT3B2C3D4E5F6G7H8J9K0M1N', TO_DATE('2025-11-20', 'YYYY-MM-DD'), '01HT3A2B3C4D5E6F7G8H9J0K1M', 'DK_NK_00124', 250, 2800, 1);
+
+INSERT INTO hopdong (soHD, ngayKy, maKH, soDienKe, kwDinhMuc, dongiaKW, isPaid) 
+VALUES ('01HT3B3C4D5E6F7G8H9J0K1M2N', TO_DATE('2025-12-01', 'YYYY-MM-DD'), '01HT3A3B4C5D6E7F8G9H0J1K2M', 'DK_Q3_09331', 800, 3500, 1);
+
+INSERT INTO hopdong (soHD, ngayKy, maKH, soDienKe, kwDinhMuc, dongiaKW, isPaid) 
+VALUES ('01HT3B4C5D6E7F8G9H0J1K2M3N', TO_DATE('2026-01-10', 'YYYY-MM-DD'), '01HT3A4B5C6D7E8F9G0H1J2K3M', 'DK_CR_00562', 150, 2500, 0);
+
+-- ==============================================================================
+-- 5. BẢNG HÓA ĐƠN (Mã Hóa đơn dùng chuẩn ULID, nối đúng Hợp đồng và Nhân viên)
+-- ==============================================================================
+-- CN1: Thu tiền điện Nam Long (Đã thanh toán)
+INSERT INTO hoadon (soHDN, thang, nam, soHD, maNV, soTien) 
+VALUES ('01HT3C1D2E3F4G5H6J7K8M9N0P', 3, 2026, '01HT3B1C2D3E4F5G6H7J8K9M0N', 'NV_101', 1240000);
+
+-- CN2: Thu tiền điện Nguyễn Văn Toàn (Chưa thanh toán)
+INSERT INTO hoadon (soHDN, thang, nam, soHD, maNV, soTien) 
+VALUES ('01HT3C2D3E4F5G6H7J8K9M0N1P', 3, 2026, '01HT3B2C3D4E5F6G7H8J9K0M1N', 'NV_201', 700000);
+
+-- CN3: Thu tiền điện Bệnh viện (Chưa thanh toán)
+INSERT INTO hoadon (soHDN, thang, nam, soHD, maNV, soTien) 
+VALUES ('01HT3C3D4E5F6G7H8J9K0M1N2P', 3, 2026, '01HT3B3C4D5E6F7G8H9J0K1M2N', 'NV_301', 2800000);
+
+-- CN4: Thu tiền điện Trần Đại Nghĩa (Chưa thanh toán)
+INSERT INTO hoadon (soHDN, thang, nam, soHD, maNV, soTien) 
+VALUES ('01HT3C4D5E6F7G8H9J0K1M2N3P', 3, 2026, '01HT3B4C5D6E7F8G9H0J1K2M3N', 'NV_401', 375000);
+
+-- CHỐT GIAO DỊCH
+COMMIT;
+
+
+-- Đảm bảo đang đứng ở Tổng Bộ
+ALTER SESSION SET CONTAINER = TongBo;
+ALTER SESSION SET CURRENT_SCHEMA = db_dienluc;
+
+-- Xóa từ ngọn (con) ngược lên gốc (cha)
+DELETE FROM hoadon;
+DELETE FROM hopdong;
+DELETE FROM khachhang;
+DELETE FROM nhanvien;
+DELETE FROM chinhanh;
+
+-- Bắt buộc phải COMMIT để chốt giao dịch, Trigger mới chốt theo
+COMMIT;
+
+
+
+select * from nhanvien
+select * from chinhanh
+
+
+-- ==========================================
+-- 1. SETUP TẠI TỔNG BỘ (Quyền Ghi/Sửa)
+-- ==========================================
+ALTER SESSION SET CONTAINER = TongBo;
+
+-- Tạo Role và cấp quyền (Nếu đã chạy đoạn này trước đó thì bỏ qua, nếu chạy báo lỗi 'role already exists' thì kệ nó)
+CREATE ROLE role_nhanvien_tongbo;
+GRANT CREATE SESSION TO role_nhanvien_tongbo;
+GRANT INSERT ON db_dienluc.khachhang TO role_nhanvien_tongbo;
+GRANT INSERT ON db_dienluc.hopdong TO role_nhanvien_tongbo;
+GRANT Insert ON db_dienluc.hoadon TO role_nhanvien_tongbo;
+GRANT UPDATE (isPaid) ON db_dienluc.hopdong TO role_nhanvien_tongbo;
+
+-- Tạo 4 tài khoản NV ở Tổng Bộ với mật khẩu '123456'
+CREATE USER NV_101 IDENTIFIED BY "123456";
+CREATE USER NV_201 IDENTIFIED BY "123456";
+CREATE USER NV_301 IDENTIFIED BY "123456";
+CREATE USER NV_401 IDENTIFIED BY "123456";
+
+-- Ép Role cho 4 NV ở Tổng Bộ
+GRANT role_nhanvien_tongbo TO NV_101, NV_201, NV_301, NV_401;
+
+-- ==========================================
+-- 2. SETUP TẠI THÀNH PHỐ 1 (Quyền Đọc cách ly CN1 và CN3)
+-- ==========================================
+ALTER SESSION SET CONTAINER = TP1;
+
+-- Tạo Role và cấp quyền (Bỏ qua đoạn CREATE ROLE nếu đã chạy trước đó)
+CREATE ROLE role_nhanvien_cn1;
+CREATE ROLE role_nhanvien_cn3;
+GRANT CREATE SESSION TO role_nhanvien_cn1, role_nhanvien_cn3;
+
+GRANT SELECT ON db_dienlucCN1.chinhanh TO role_nhanvien_cn1;
+GRANT SELECT ON db_dienlucCN1.nhanvien TO role_nhanvien_cn1;
+GRANT SELECT ON db_dienlucCN1.khachhang TO role_nhanvien_cn1;
+GRANT SELECT ON db_dienlucCN1.hopdong TO role_nhanvien_cn1;
+GRANT SELECT ON db_dienlucCN1.hoadon TO role_nhanvien_cn1;
+
+GRANT SELECT ON db_dienlucCN3.chinhanh TO role_nhanvien_cn3;
+GRANT SELECT ON db_dienlucCN3.nhanvien TO role_nhanvien_cn3;
+GRANT SELECT ON db_dienlucCN3.khachhang TO role_nhanvien_cn3;
+GRANT SELECT ON db_dienlucCN3.hopdong TO role_nhanvien_cn3;
+GRANT SELECT ON db_dienlucCN3.hoadon TO role_nhanvien_cn3;
+
+-- Tạo tài khoản NV ở TP1 với mật khẩu '123456'
+CREATE USER NV_101 IDENTIFIED BY "123456";
+CREATE USER NV_301 IDENTIFIED BY "123456";
+
+-- Ép Role cho 2 NV ở TP1
+GRANT role_nhanvien_cn1 TO NV_101;
+GRANT role_nhanvien_cn3 TO NV_301;
+
+-- ==========================================
+-- 3. SETUP TẠI THÀNH PHỐ 2 (Quyền Đọc cách ly CN2 và CN4)
+-- ==========================================
+ALTER SESSION SET CONTAINER = TP2;
+
+-- Tạo Role và cấp quyền (Bỏ qua đoạn CREATE ROLE nếu đã chạy trước đó)
+CREATE ROLE role_nhanvien_cn2;
+CREATE ROLE role_nhanvien_cn4;
+GRANT CREATE SESSION TO role_nhanvien_cn2, role_nhanvien_cn4;
+
+GRANT SELECT ON db_dienlucCN2.chinhanh TO role_nhanvien_cn2;
+GRANT SELECT ON db_dienlucCN2.nhanvien TO role_nhanvien_cn2;
+GRANT SELECT ON db_dienlucCN2.khachhang TO role_nhanvien_cn2;
+GRANT SELECT ON db_dienlucCN2.hopdong TO role_nhanvien_cn2;
+GRANT SELECT ON db_dienlucCN2.hoadon TO role_nhanvien_cn2;
+
+GRANT SELECT ON db_dienlucCN4.chinhanh TO role_nhanvien_cn4;
+GRANT SELECT ON db_dienlucCN4.nhanvien TO role_nhanvien_cn4;
+GRANT SELECT ON db_dienlucCN4.khachhang TO role_nhanvien_cn4;
+GRANT SELECT ON db_dienlucCN4.hopdong TO role_nhanvien_cn4;
+GRANT SELECT ON db_dienlucCN4.hoadon TO role_nhanvien_cn4;
+
+-- Tạo tài khoản NV ở TP2 với mật khẩu '123456'
+CREATE USER NV_201 IDENTIFIED BY "123456";
+CREATE USER NV_401 IDENTIFIED BY "123456";
+
+-- Ép Role cho 2 NV ở TP2
+GRANT role_nhanvien_cn2 TO NV_201;
+GRANT role_nhanvien_cn4 TO NV_401;
+
+--test api
+SELECT COUNT(maNV) AS SO_LUONG_NV FROM db_dienluc.nhanvien
+SELECT COUNT(maKH) AS SO_LUONG_KH FROM db_dienluc.khachhang
+select * from khachhang
+
+
+--chưa chạy
+-- 1. Thêm cột status (kiểu số nguyên nhỏ), mặc định nhân viên mới vào là 0 , 1 là có tài khoản , 2 là bị khóa , 3 là bị xóa
+ALTER TABLE nhanvien ADD status NUMBER(1) DEFAULT 0;
+
+-- 2. Cập nhật lại mấy ông nhân viên cũ hôm qua mình insert tay thành trạng thái 1 (Active)
+UPDATE db_dienluc.nhanvien SET status = 1;
+
+-- 3. Xóa sổ cột islocked cũ đi cho nhẹ nợ
+ALTER TABLE nhanvien DROP COLUMN islocked;
+
+COMMIT;
+
+
+
+
+
+
+
+
+
+--phan quyen authentication
+CREATE ROLE R_MANAGER;
+CREATE ROLE R_STAFF;
+CREATE ROLE R_ADMIN;
+
+-- Thêm HD, tạo KH, xem KH, thêm Hóa đơn
+GRANT INSERT ON hopdong TO R_STAFF;
+GRANT INSERT, SELECT ON khachhang TO R_STAFF;
+GRANT INSERT ON hoadon TO R_STAFF;
+
+-- CÁI NÀY ĐỈNH NÈ: Chỉ cho update đúng cột "ispaid" của bảng hopdong
+GRANT UPDATE (ispaid) ON hopdong TO R_STAFF;
+
+-- Sửa tên Chi nhánh (Giả sử bảng chinhanh cột tencn)
+GRANT UPDATE (tencn) ON chinhanh TO R_MANAGER;
+
+-- Sửa tên NV (Giả sử bảng nhanvien cột hoten)
+GRANT UPDATE (hoten) ON nhanvien TO R_MANAGER;
+
+-- Sửa SĐT, Tên KH, Mã CN của khách hàng
+GRANT UPDATE (sdt, tenkh, macn) ON khachhang TO R_MANAGER;
+
+-- Sửa và Xóa Hợp đồng
+GRANT UPDATE, DELETE ON hopdong TO R_MANAGER;
+
+-- Trùm thì lấy full quyền thao tác dữ liệu
+GRANT ALL PRIVILEGES TO R_ADMIN;
+
+SELECT ROLE 
+    FROM SESSION_ROLES 
+    WHERE ROLE IN ('R_ADMIN', 'R_MANAGER', 'R_STAFF')
+-- ví dụ 
+-- GRANT R_STAFF TO NV001;
+-- GRANT R_MANAGER TO NV002;
+

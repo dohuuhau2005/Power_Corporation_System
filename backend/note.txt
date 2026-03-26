@@ -1,0 +1,22 @@
+manager
+    sửa tên cn
+    sửa tên NV
+    sửa SDT khach hang
+    sửa tên KH,MaCN khách hàng
+    sửa hop dong
+    xóa hop dong
+
+
+staff
+    Thêm hd
+    update ispaid hop dong
+    thêm hóa đơn
+    tạo khách hàng, xem khách hàng
+ADMIN 
+    ALL
+
+
+    
+
+
+  

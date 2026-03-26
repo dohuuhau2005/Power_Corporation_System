@@ -1,0 +1,86 @@
+const crypto = require('crypto');
+
+const AES_SECRET_KEY = Buffer.from("DienLuc@2026_SecretKey_DienLuc@2", 'utf8'); 
+const PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----\n... (Nhét khóa của ông vào) ...\n-----END PRIVATE KEY-----`;
+
+// 🔥 CÁCH CỦA BRO: CHƠI RAW SQL LUÔN, KHÔNG CẦN JSON
+const rawSQLQuery = `INSERT INTO nhanvien (maNV, hoten, maCN) VALUES ('NV999', 'Huy', 'TP1')`;
+
+// BƯỚC 1: Băm cái chuỗi SQL bằng AES
+const iv = crypto.randomBytes(16);
+const cipher = crypto.createCipheriv('aes-256-cbc', AES_SECRET_KEY, iv);
+let encryptedSQL = cipher.update(rawSQLQuery, 'utf8', 'hex');
+encryptedSQL += cipher.final('hex');
+
+// BƯỚC 2: Sếp đóng mộc RSA lên cái chuỗi SQL đã băm
+const sign = crypto.createSign('SHA256');
+sign.update(encryptedSQL);
+const signature = sign.sign(PRIVATE_KEY, 'base64');
+
+// Đóng gói 3 món (chìa khóa IV, câu SQL mù, mộc đỏ) để gửi qua RabbitMQ
+const messageToSend = {
+    iv: iv.toString('hex'),
+    ciphertext: encryptedSQL,
+    signature: signature
+};
+
+console.log("🚀 Đã bắn cục SQL mã hóa qua RabbitMQ!");
+// channel.sendToQueue('SYNC_TP1', Buffer.from(JSON.stringify(messageToSend)));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const crypto = require('crypto');
+
+const AES_SECRET_KEY = Buffer.from("DienLuc@2026_SecretKey_DienLuc@2", 'utf8'); 
+const PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----\n... (Nhét khóa của ông vào) ...\n-----END PUBLIC KEY-----`;
+
+// Giả lập RabbitMQ nhận được cục message
+const messageReceived = { iv: "...", ciphertext: "...", signature: "..." };
+
+// BƯỚC 1: Soi mộc RSA xem phải của Sếp không
+const verify = crypto.createVerify('SHA256');
+verify.update(messageReceived.ciphertext);
+const isAuthentic = verify.verify(PUBLIC_KEY, messageReceived.signature, 'base64');
+
+if (isAuthentic) {
+    // BƯỚC 2: Giải mã AES lôi câu SQL gốc ra
+    const decipher = crypto.createDecipheriv(
+        'aes-256-cbc', 
+        AES_SECRET_KEY, 
+        Buffer.from(messageReceived.iv, 'hex')
+    );
+    
+    let rawSQLQuery = decipher.update(messageReceived.ciphertext, 'hex', 'utf8');
+    rawSQLQuery += decipher.final('utf8');
+    
+    console.log("🔥 Lụm được câu lệnh SQL tuyệt mật:", rawSQLQuery);
+    
+    // BƯỚC 3: Dập thẳng xuống Oracle DB, KHÔNG CẦN IF/ELSE, KHÔNG CẦN BIND BIẾN
+    /* try {
+        await connect.execute(rawSQLQuery, {}, { autoCommit: true });
+        console.log("✅ Thực thi DB thành công!");
+        // channel.ack(msg);
+    } catch (err) {
+        console.error("Lỗi Oracle:", err);
+    }
+    */
+} else {
+    console.log("❌ Mộc giả! Sút vào sọt rác!");
+}
