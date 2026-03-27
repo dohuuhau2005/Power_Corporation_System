@@ -5,13 +5,20 @@ const oracledb = require('oracledb');
 const connections = require('../config/OraclePool');
 const { verifyToken } = require('../middleware/verifyToken');
 const { authorization } = require('../middleware/authorization');
+const DecryptAES = require('../config/DecryptAES');
+const connectionFromJson = require('../config/OraclePoolFromJson');
+
 
 router.get('/CountSite', verifyToken, authorization("R_ADMIN"), async (req, res) => {
 
     try {
-        var { connection } = await connections.getConnectionForBranch("db_dienluc", "123456", "TongBo", "");
+
         const query = `SELECT COUNT(maCN) AS SO_LUONG_CN FROM db_dienluc.chinhanh`;
-        const result = await connection.execute(
+        const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
+
+        connect = await connectionFromJson.getConnectionFromJson(connectionJson);
+
+        const result = await connect.execute(
             query,
             {},
             { outFormat: oracledb.OUT_FORMAT_OBJECT }
@@ -22,9 +29,9 @@ router.get('/CountSite', verifyToken, authorization("R_ADMIN"), async (req, res)
         console.error("Lỗi khi đếm số chi nhánh:", error);
         return res.status(500).json({ success: false, message: "Lỗi máy chủ khi đếm số chi nhánh" });
     } finally {
-        if (connection) {
+        if (connect) {
             try {
-                await connection.close();
+                await connect.close();
             } catch (err) {
                 console.error("Lỗi đóng connection:", err);
             }
@@ -33,9 +40,13 @@ router.get('/CountSite', verifyToken, authorization("R_ADMIN"), async (req, res)
 });
 router.get('/CountCustomer', verifyToken, authorization("R_ADMIN"), async (req, res) => {
     try {
-        var { connection } = await connections.getConnectionForBranch("db_dienluc", "123456", "TongBo", "");
+
         const query = `SELECT COUNT(maKH) AS SO_LUONG_KH FROM db_dienluc.khachhang`;
-        const result = await connection.execute(
+        const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
+
+        connect = await connectionFromJson.getConnectionFromJson(connectionJson);
+
+        const result = await connect.execute(
             query,
             {},
             { outFormat: oracledb.OUT_FORMAT_OBJECT }
@@ -48,9 +59,9 @@ router.get('/CountCustomer', verifyToken, authorization("R_ADMIN"), async (req, 
         console.error("Lỗi khi đếm số Khách hàng:", error);
         return res.status(500).json({ success: false, message: "Lỗi máy chủ khi đếm số khách hàng" });
     } finally {
-        if (connection) {
+        if (connect) {
             try {
-                await connection.close();
+                await connect.close();
             } catch (err) {
                 console.error("Lỗi đóng connection:", err);
             }
@@ -60,9 +71,13 @@ router.get('/CountCustomer', verifyToken, authorization("R_ADMIN"), async (req, 
 
 router.get('/CountStaff', verifyToken, authorization("R_ADMIN"), async (req, res) => {
     try {
-        var { connection } = await connections.getConnectionForBranch("db_dienluc", "123456", "TongBo", "");
+
         const query = `SELECT COUNT(maNV) AS SO_LUONG_NV FROM db_dienluc.nhanvien`;
-        const result = await connection.execute(
+        const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
+
+        connect = await connectionFromJson.getConnectionFromJson(connectionJson);
+
+        const result = await connect.execute(
             query,
             {},
             { outFormat: oracledb.OUT_FORMAT_OBJECT }
@@ -75,9 +90,9 @@ router.get('/CountStaff', verifyToken, authorization("R_ADMIN"), async (req, res
         console.error("Lỗi khi đếm số Nhân Viên:", error);
         return res.status(500).json({ success: false, message: "Lỗi máy chủ khi đếm số Nhân viên" });
     } finally {
-        if (connection) {
+        if (connect) {
             try {
-                await connection.close();
+                await connect.close();
             } catch (err) {
                 console.error("Lỗi đóng connection:", err);
             }

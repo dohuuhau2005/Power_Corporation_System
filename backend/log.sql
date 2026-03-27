@@ -54,6 +54,7 @@ CREATE TABLE nhanvien (
     maNV VARCHAR(20) PRIMARY KEY,
     hoten NVARCHAR(255) NOT NULL,
     maCN VARCHAR(20),
+    role varchar2(20),
     FOREIGN KEY (maCN) REFERENCES chinhanh(maCN)
 );
 
@@ -424,6 +425,8 @@ CREATE TABLE nhanvien (
     maNV VARCHAR2(20) PRIMARY KEY,
     hoten NVARCHAR2(255) NOT NULL,
     maCN VARCHAR2(20),
+    role varchar2(20),
+    status NUMBER(1) DEFAULT 0,
     islocked NUMBER(1) DEFAULT 0,
     FOREIGN KEY (maCN) REFERENCES chinhanh(maCN)
 ) ;
@@ -542,47 +545,55 @@ END;
 CREATE OR REPLACE TRIGGER trg_sync_nhanvien
 AFTER INSERT OR UPDATE OR DELETE ON nhanvien
 FOR EACH ROW
-DECLARE
-    v_maCN VARCHAR2(20);
 BEGIN
-    IF DELETING THEN v_maCN := :OLD.maCN; ELSE v_maCN := :NEW.maCN; END IF;
+    -- ==========================================
+    -- 1. TRƯỜNG HỢP THÊM MỚI (INSERT)
+    -- ==========================================
+    IF INSERTING THEN
+        IF :NEW.maCN = 'CN1' THEN INSERT INTO nhanvien@link_to_cn1 (maNV, hoten, maCN, status, role) VALUES (:NEW.maNV, :NEW.hoten, :NEW.maCN, :NEW.status, :NEW.role);
+        ELSIF :NEW.maCN = 'CN2' THEN INSERT INTO nhanvien@link_to_cn2 (maNV, hoten, maCN, status, role) VALUES (:NEW.maNV, :NEW.hoten, :NEW.maCN, :NEW.status, :NEW.role);
+        ELSIF :NEW.maCN = 'CN3' THEN INSERT INTO nhanvien@link_to_cn3 (maNV, hoten, maCN, status, role) VALUES (:NEW.maNV, :NEW.hoten, :NEW.maCN, :NEW.status, :NEW.role);
+        ELSIF :NEW.maCN = 'CN4' THEN INSERT INTO nhanvien@link_to_cn4 (maNV, hoten, maCN, status, role) VALUES (:NEW.maNV, :NEW.hoten, :NEW.maCN, :NEW.status, :NEW.role);
+        END IF;
 
-    IF v_maCN = 'CN1' THEN
-        IF INSERTING THEN
-            INSERT INTO nhanvien@link_to_cn1 (maNV, hoten, maCN, status) VALUES (:NEW.maNV, :NEW.hoten, :NEW.maCN, :NEW.status);
-        ELSIF UPDATING THEN
-            UPDATE nhanvien@link_to_cn1 SET hoten = :NEW.hoten, maCN = :NEW.maCN, status = :NEW.status WHERE maNV = :OLD.maNV;
-        ELSIF DELETING THEN
-            DELETE FROM nhanvien@link_to_cn1 WHERE maNV = :OLD.maNV;
+    -- ==========================================
+    -- 2. TRƯỜNG HỢP XÓA (DELETE)
+    -- ==========================================
+    ELSIF DELETING THEN
+        IF :OLD.maCN = 'CN1' THEN DELETE FROM nhanvien@link_to_cn1 WHERE maNV = :OLD.maNV;
+        ELSIF :OLD.maCN = 'CN2' THEN DELETE FROM nhanvien@link_to_cn2 WHERE maNV = :OLD.maNV;
+        ELSIF :OLD.maCN = 'CN3' THEN DELETE FROM nhanvien@link_to_cn3 WHERE maNV = :OLD.maNV;
+        ELSIF :OLD.maCN = 'CN4' THEN DELETE FROM nhanvien@link_to_cn4 WHERE maNV = :OLD.maNV;
         END IF;
-        
-    ELSIF v_maCN = 'CN2' THEN
-        IF INSERTING THEN 
-            INSERT INTO nhanvien@link_to_cn2 (maNV, hoten, maCN, status) VALUES (:NEW.maNV, :NEW.hoten, :NEW.maCN, :NEW.status);
-        ELSIF UPDATING THEN 
-            UPDATE nhanvien@link_to_cn2 SET hoten = :NEW.hoten, maCN = :NEW.maCN, status = :NEW.status WHERE maNV = :OLD.maNV;
-        ELSIF DELETING THEN 
-            DELETE FROM nhanvien@link_to_cn2 WHERE maNV = :OLD.maNV; 
+
+    -- ==========================================
+    -- 3. TRƯỜNG HỢP SỬA (UPDATE)
+    -- ==========================================
+    ELSIF UPDATING THEN
+        -- Kịch bản 3.1: Không đổi chi nhánh, chỉ sửa thông tin (hoten, status, role)
+        IF :OLD.maCN = :NEW.maCN THEN
+            IF :NEW.maCN = 'CN1' THEN UPDATE nhanvien@link_to_cn1 SET hoten = :NEW.hoten, status = :NEW.status, role = :NEW.role WHERE maNV = :OLD.maNV;
+            ELSIF :NEW.maCN = 'CN2' THEN UPDATE nhanvien@link_to_cn2 SET hoten = :NEW.hoten, status = :NEW.status, role = :NEW.role WHERE maNV = :OLD.maNV;
+            ELSIF :NEW.maCN = 'CN3' THEN UPDATE nhanvien@link_to_cn3 SET hoten = :NEW.hoten, status = :NEW.status, role = :NEW.role WHERE maNV = :OLD.maNV;
+            ELSIF :NEW.maCN = 'CN4' THEN UPDATE nhanvien@link_to_cn4 SET hoten = :NEW.hoten, status = :NEW.status, role = :NEW.role WHERE maNV = :OLD.maNV;
+            END IF;
+            
+        -- Kịch bản 3.2: Nhân viên thuyên chuyển công tác (Đổi maCN)
+        ELSE
+            -- Xóa data ở Chi nhánh cũ
+            IF :OLD.maCN = 'CN1' THEN DELETE FROM nhanvien@link_to_cn1 WHERE maNV = :OLD.maNV;
+            ELSIF :OLD.maCN = 'CN2' THEN DELETE FROM nhanvien@link_to_cn2 WHERE maNV = :OLD.maNV;
+            ELSIF :OLD.maCN = 'CN3' THEN DELETE FROM nhanvien@link_to_cn3 WHERE maNV = :OLD.maNV;
+            ELSIF :OLD.maCN = 'CN4' THEN DELETE FROM nhanvien@link_to_cn4 WHERE maNV = :OLD.maNV;
+            END IF;
+
+            -- Thêm data vào Chi nhánh mới
+            IF :NEW.maCN = 'CN1' THEN INSERT INTO nhanvien@link_to_cn1 (maNV, hoten, maCN, status, role) VALUES (:NEW.maNV, :NEW.hoten, :NEW.maCN, :NEW.status, :NEW.role);
+            ELSIF :NEW.maCN = 'CN2' THEN INSERT INTO nhanvien@link_to_cn2 (maNV, hoten, maCN, status, role) VALUES (:NEW.maNV, :NEW.hoten, :NEW.maCN, :NEW.status, :NEW.role);
+            ELSIF :NEW.maCN = 'CN3' THEN INSERT INTO nhanvien@link_to_cn3 (maNV, hoten, maCN, status, role) VALUES (:NEW.maNV, :NEW.hoten, :NEW.maCN, :NEW.status, :NEW.role);
+            ELSIF :NEW.maCN = 'CN4' THEN INSERT INTO nhanvien@link_to_cn4 (maNV, hoten, maCN, status, role) VALUES (:NEW.maNV, :NEW.hoten, :NEW.maCN, :NEW.status, :NEW.role);
+            END IF;
         END IF;
-        
-    ELSIF v_maCN = 'CN3' THEN
-        IF INSERTING THEN 
-            INSERT INTO nhanvien@link_to_cn3 (maNV, hoten, maCN, status) VALUES (:NEW.maNV, :NEW.hoten, :NEW.maCN, :NEW.status);
-        ELSIF UPDATING THEN 
-            UPDATE nhanvien@link_to_cn3 SET hoten = :NEW.hoten, maCN = :NEW.maCN, status = :NEW.status WHERE maNV = :OLD.maNV;
-        ELSIF DELETING THEN 
-            DELETE FROM nhanvien@link_to_cn3 WHERE maNV = :OLD.maNV; 
-        END IF;
-        
-    ELSIF v_maCN = 'CN4' THEN
-        IF INSERTING THEN 
-            INSERT INTO nhanvien@link_to_cn4 (maNV, hoten, maCN, status) VALUES (:NEW.maNV, :NEW.hoten, :NEW.maCN, :NEW.status);
-        ELSIF UPDATING THEN 
-            UPDATE nhanvien@link_to_cn4 SET hoten = :NEW.hoten, maCN = :NEW.maCN, status = :NEW.status WHERE maNV = :OLD.maNV;
-        ELSIF DELETING THEN 
-            DELETE FROM nhanvien@link_to_cn4 WHERE maNV = :OLD.maNV; 
-        END IF;
-        
     END IF;
 END;
 /
@@ -842,96 +853,15 @@ select * from nhanvien
 select * from chinhanh
 
 
--- ==========================================
--- 1. SETUP TẠI TỔNG BỘ (Quyền Ghi/Sửa)
--- ==========================================
-ALTER SESSION SET CONTAINER = TongBo;
-
--- Tạo Role và cấp quyền (Nếu đã chạy đoạn này trước đó thì bỏ qua, nếu chạy báo lỗi 'role already exists' thì kệ nó)
-CREATE ROLE role_nhanvien_tongbo;
-GRANT CREATE SESSION TO role_nhanvien_tongbo;
-GRANT INSERT ON db_dienluc.khachhang TO role_nhanvien_tongbo;
-GRANT INSERT ON db_dienluc.hopdong TO role_nhanvien_tongbo;
-GRANT Insert ON db_dienluc.hoadon TO role_nhanvien_tongbo;
-GRANT UPDATE (isPaid) ON db_dienluc.hopdong TO role_nhanvien_tongbo;
-
--- Tạo 4 tài khoản NV ở Tổng Bộ với mật khẩu '123456'
-CREATE USER NV_101 IDENTIFIED BY "123456";
-CREATE USER NV_201 IDENTIFIED BY "123456";
-CREATE USER NV_301 IDENTIFIED BY "123456";
-CREATE USER NV_401 IDENTIFIED BY "123456";
-
--- Ép Role cho 4 NV ở Tổng Bộ
-GRANT role_nhanvien_tongbo TO NV_101, NV_201, NV_301, NV_401;
-
--- ==========================================
--- 2. SETUP TẠI THÀNH PHỐ 1 (Quyền Đọc cách ly CN1 và CN3)
--- ==========================================
-ALTER SESSION SET CONTAINER = TP1;
-
--- Tạo Role và cấp quyền (Bỏ qua đoạn CREATE ROLE nếu đã chạy trước đó)
-CREATE ROLE role_nhanvien_cn1;
-CREATE ROLE role_nhanvien_cn3;
-GRANT CREATE SESSION TO role_nhanvien_cn1, role_nhanvien_cn3;
-
-GRANT SELECT ON db_dienlucCN1.chinhanh TO role_nhanvien_cn1;
-GRANT SELECT ON db_dienlucCN1.nhanvien TO role_nhanvien_cn1;
-GRANT SELECT ON db_dienlucCN1.khachhang TO role_nhanvien_cn1;
-GRANT SELECT ON db_dienlucCN1.hopdong TO role_nhanvien_cn1;
-GRANT SELECT ON db_dienlucCN1.hoadon TO role_nhanvien_cn1;
-
-GRANT SELECT ON db_dienlucCN3.chinhanh TO role_nhanvien_cn3;
-GRANT SELECT ON db_dienlucCN3.nhanvien TO role_nhanvien_cn3;
-GRANT SELECT ON db_dienlucCN3.khachhang TO role_nhanvien_cn3;
-GRANT SELECT ON db_dienlucCN3.hopdong TO role_nhanvien_cn3;
-GRANT SELECT ON db_dienlucCN3.hoadon TO role_nhanvien_cn3;
-
--- Tạo tài khoản NV ở TP1 với mật khẩu '123456'
-CREATE USER NV_101 IDENTIFIED BY "123456";
-CREATE USER NV_301 IDENTIFIED BY "123456";
-
--- Ép Role cho 2 NV ở TP1
-GRANT role_nhanvien_cn1 TO NV_101;
-GRANT role_nhanvien_cn3 TO NV_301;
-
--- ==========================================
--- 3. SETUP TẠI THÀNH PHỐ 2 (Quyền Đọc cách ly CN2 và CN4)
--- ==========================================
-ALTER SESSION SET CONTAINER = TP2;
-
--- Tạo Role và cấp quyền (Bỏ qua đoạn CREATE ROLE nếu đã chạy trước đó)
-CREATE ROLE role_nhanvien_cn2;
-CREATE ROLE role_nhanvien_cn4;
-GRANT CREATE SESSION TO role_nhanvien_cn2, role_nhanvien_cn4;
-
-GRANT SELECT ON db_dienlucCN2.chinhanh TO role_nhanvien_cn2;
-GRANT SELECT ON db_dienlucCN2.nhanvien TO role_nhanvien_cn2;
-GRANT SELECT ON db_dienlucCN2.khachhang TO role_nhanvien_cn2;
-GRANT SELECT ON db_dienlucCN2.hopdong TO role_nhanvien_cn2;
-GRANT SELECT ON db_dienlucCN2.hoadon TO role_nhanvien_cn2;
-
-GRANT SELECT ON db_dienlucCN4.chinhanh TO role_nhanvien_cn4;
-GRANT SELECT ON db_dienlucCN4.nhanvien TO role_nhanvien_cn4;
-GRANT SELECT ON db_dienlucCN4.khachhang TO role_nhanvien_cn4;
-GRANT SELECT ON db_dienlucCN4.hopdong TO role_nhanvien_cn4;
-GRANT SELECT ON db_dienlucCN4.hoadon TO role_nhanvien_cn4;
-
--- Tạo tài khoản NV ở TP2 với mật khẩu '123456'
-CREATE USER NV_201 IDENTIFIED BY "123456";
-CREATE USER NV_401 IDENTIFIED BY "123456";
-
--- Ép Role cho 2 NV ở TP2
-GRANT role_nhanvien_cn2 TO NV_201;
-GRANT role_nhanvien_cn4 TO NV_401;
 
 --test api
 SELECT COUNT(maNV) AS SO_LUONG_NV FROM db_dienluc.nhanvien
 SELECT COUNT(maKH) AS SO_LUONG_KH FROM db_dienluc.khachhang
 select * from khachhang
 
-
+select * from nhanvien
 --chưa chạy
--- 1. Thêm cột status (kiểu số nguyên nhỏ), mặc định nhân viên mới vào là 0 , 1 là có tài khoản , 2 là bị khóa , 3 là bị xóa
+-- 1. Thêm cột status (kiểu số nguyên nhỏ), mặc định nhân viên mới vào là 0 , 1 là có tài khoản , 2 là bị khóa , 3 là bị xóa,4 là tài khoản đang sửa role
 ALTER TABLE nhanvien ADD status NUMBER(1) DEFAULT 0;
 
 -- 2. Cập nhật lại mấy ông nhân viên cũ hôm qua mình insert tay thành trạng thái 1 (Active)
@@ -942,41 +872,125 @@ ALTER TABLE nhanvien DROP COLUMN islocked;
 
 COMMIT;
 
+-- tạo admin
+ALTER SESSION SET CONTAINER = TongBo;
+ALTER SESSION SET CURRENT_SCHEMA = db_dienluc;
+
+-- 1. Khai sinh cái móng Tổng bộ vào bảng Chi nhánh trước (Đỡ lỗi khóa ngoại)
+INSERT INTO chinhanh (maCN, tenCN, thanhpho) 
+VALUES ('TongBo', N'Trụ sở Tổng Công ty Điện Lực', 'TongBo');
+
+-- 2. Đón ông Trùm vào làm việc
+INSERT INTO nhanvien (maNV, hoten, maCN, role, status) 
+VALUES ('NV_000', N'Trùm Cuối Tổng Bộ', 'TongBo', 'R_ADMIN', 1);
+
+-- Chốt đơn!
+COMMIT;
 
 
 
 
+ALTER SESSION SET CONTAINER = TongBo;
+ALTER SESSION SET CURRENT_SCHEMA = db_dienluc;
 
-
-
-
---phan quyen authentication
+-- ==========================================
+-- 1. TẠO ROLE VÀ GÁN QUYỀN TẠI TỔNG BỘ
+-- ==========================================
 CREATE ROLE R_MANAGER;
 CREATE ROLE R_STAFF;
 CREATE ROLE R_ADMIN;
 
--- Thêm HD, tạo KH, xem KH, thêm Hóa đơn
+-- Quyền của Staff
 GRANT INSERT ON hopdong TO R_STAFF;
 GRANT INSERT, SELECT ON khachhang TO R_STAFF;
 GRANT INSERT ON hoadon TO R_STAFF;
-
--- CÁI NÀY ĐỈNH NÈ: Chỉ cho update đúng cột "ispaid" của bảng hopdong
 GRANT UPDATE (ispaid) ON hopdong TO R_STAFF;
 
--- Sửa tên Chi nhánh (Giả sử bảng chinhanh cột tencn)
+-- Quyền của Manager (Kế thừa Staff)
 GRANT UPDATE (tencn) ON chinhanh TO R_MANAGER;
-
--- Sửa tên NV (Giả sử bảng nhanvien cột hoten)
 GRANT UPDATE (hoten) ON nhanvien TO R_MANAGER;
-
--- Sửa SĐT, Tên KH, Mã CN của khách hàng
 GRANT UPDATE (sdt, tenkh, macn) ON khachhang TO R_MANAGER;
-
--- Sửa và Xóa Hợp đồng
 GRANT UPDATE, DELETE ON hopdong TO R_MANAGER;
+GRANT R_STAFF TO R_MANAGER;
 
--- Trùm thì lấy full quyền thao tác dữ liệu
+-- Quyền Admin
 GRANT ALL PRIVILEGES TO R_ADMIN;
+
+-- ==========================================
+-- 2. TẠO TÀI KHOẢN VÀ GẮN ROLE TẠI TỔNG BỘ
+-- ==========================================
+CREATE USER NV_000 IDENTIFIED BY 123456;
+CREATE USER NV_101 IDENTIFIED BY 123456;
+CREATE USER NV_201 IDENTIFIED BY 123456;
+CREATE USER NV_301 IDENTIFIED BY 123456;
+CREATE USER NV_401 IDENTIFIED BY 123456;
+
+GRANT CREATE SESSION TO NV_000, NV_101, NV_201, NV_301, NV_401;
+
+GRANT R_ADMIN TO NV_000;
+GRANT R_STAFF TO NV_101;
+GRANT R_STAFF TO NV_201;
+GRANT R_MANAGER TO NV_301;
+GRANT R_MANAGER TO NV_401;
+
+-- ==========================================
+-- 3. CẬP NHẬT CỘT "ROLE" TRONG BẢNG NHÂN VIÊN
+-- ==========================================
+-- Admin
+UPDATE nhanvien SET role = 'R_ADMIN' WHERE maNV = 'NV_000';
+-- Staff
+UPDATE nhanvien SET role = 'R_STAFF' WHERE maNV IN ('NV_101', 'NV_201');
+-- Manager
+UPDATE nhanvien SET role = 'R_MANAGER' WHERE maNV IN ('NV_301', 'NV_401');
+
+COMMIT;
+
+
+
+ALTER SESSION SET CONTAINER = TP1;
+
+-- Tạo acc để API có thể login vào TP1
+CREATE USER NV_101 IDENTIFIED BY 123456; 
+CREATE USER NV_301 IDENTIFIED BY 123456; 
+GRANT CREATE SESSION TO NV_101, NV_301;
+
+-- Cấp quyền CHỈ ĐỌC (SELECT) cho NV_101 vào Schema CN1
+GRANT SELECT ON db_dienlucCN1.chinhanh TO NV_101;
+GRANT SELECT ON db_dienlucCN1.nhanvien TO NV_101;
+GRANT SELECT ON db_dienlucCN1.khachhang TO NV_101;
+GRANT SELECT ON db_dienlucCN1.hopdong TO NV_101;
+GRANT SELECT ON db_dienlucCN1.hoadon TO NV_101;
+
+-- Cấp quyền CHỈ ĐỌC (SELECT) cho NV_301 vào Schema CN3
+GRANT SELECT ON db_dienlucCN3.chinhanh TO NV_301;
+GRANT SELECT ON db_dienlucCN3.nhanvien TO NV_301;
+GRANT SELECT ON db_dienlucCN3.khachhang TO NV_301;
+GRANT SELECT ON db_dienlucCN3.hopdong TO NV_301;
+GRANT SELECT ON db_dienlucCN3.hoadon TO NV_301;
+
+
+
+
+ALTER SESSION SET CONTAINER = TP2;
+
+-- Tạo acc để API có thể login vào TP2
+CREATE USER NV_201 IDENTIFIED BY 123456; 
+CREATE USER NV_401 IDENTIFIED BY 123456; 
+GRANT CREATE SESSION TO NV_201, NV_401;
+
+-- Cấp quyền CHỈ ĐỌC (SELECT) cho NV_201 vào Schema CN2
+GRANT SELECT ON db_dienlucCN2.chinhanh TO NV_201;
+GRANT SELECT ON db_dienlucCN2.nhanvien TO NV_201;
+GRANT SELECT ON db_dienlucCN2.khachhang TO NV_201;
+GRANT SELECT ON db_dienlucCN2.hopdong TO NV_201;
+GRANT SELECT ON db_dienlucCN2.hoadon TO NV_201;
+
+-- Cấp quyền CHỈ ĐỌC (SELECT) cho NV_401 vào Schema CN4
+GRANT SELECT ON db_dienlucCN4.chinhanh TO NV_401;
+GRANT SELECT ON db_dienlucCN4.nhanvien TO NV_401;
+GRANT SELECT ON db_dienlucCN4.khachhang TO NV_401;
+GRANT SELECT ON db_dienlucCN4.hopdong TO NV_401;
+GRANT SELECT ON db_dienlucCN4.hoadon TO NV_401;
 
 SELECT ROLE 
     FROM SESSION_ROLES 
@@ -985,3 +999,39 @@ SELECT ROLE
 -- GRANT R_STAFF TO NV001;
 -- GRANT R_MANAGER TO NV002;
 
+ALTER SESSION SET CONTAINER = TongBo;
+ALTER SESSION SET CURRENT_SCHEMA = db_dienluc;
+
+-- Triệu hồi Admin Tổng Bộ (Active sẵn và cầm luôn Role Admin)
+INSERT INTO nhanvien (maNV, hoten, maCN, role, status) 
+VALUES ('NV_000', N'admin tổng bộ', 'TongBo', 'R_ADMIN', 1);
+
+COMMIT;
+
+
+
+--check kết nối và đăng nhập
+ALTER SESSION SET CONTAINER = TongBo;
+
+-- Xem 5 thanh niên này đang cầm Role gì trong tay
+SELECT GRANTEE AS TEN_TAI_KHOAN, GRANTED_ROLE AS QUYEN_HAN 
+FROM DBA_ROLE_PRIVS 
+WHERE GRANTEE IN ('NV_000', 'NV_101', 'NV_201', 'NV_301', 'NV_401')
+ORDER BY GRANTEE;
+
+
+-- Soi TP1
+ALTER SESSION SET CONTAINER = TP1;
+SELECT GRANTEE AS TEN_TAI_KHOAN, TABLE_NAME AS TEN_BANG, PRIVILEGE AS QUYEN 
+FROM DBA_TAB_PRIVS 
+WHERE GRANTEE IN ('NV_101', 'NV_301') 
+ORDER BY GRANTEE, TABLE_NAME;
+
+-- Soi TP2
+ALTER SESSION SET CONTAINER = TP2;
+SELECT GRANTEE AS TEN_TAI_KHOAN, TABLE_NAME AS TEN_BANG, PRIVILEGE AS QUYEN 
+FROM DBA_TAB_PRIVS 
+WHERE GRANTEE IN ('NV_201', 'NV_401') 
+ORDER BY GRANTEE, TABLE_NAME;
+
+select * from chinhanh

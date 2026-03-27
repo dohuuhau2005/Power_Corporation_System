@@ -1,21 +1,42 @@
+const amqp = require('amqplib');
+const crypto = require('crypto');
 const EncryptAES = require('./EncryptAES');
+const fs = require('fs');
+const path = require('path');
 const send = async (query) => {
+    try {
+        const keyPath = path.join(__dirname, '../../private_chuẩn.pem');
+        const PRIVATE_KEY = fs.readFileSync(keyPath, 'utf8');
+        console.log(PRIVATE_KEY);
+        const { iv, encryptedSQL } = EncryptAES(query);
 
-    const PRIVATE_KEY = process.env.privatekey;
-    const encryptedSQL = EncryptAES(query);
-    // BƯỚC 2: Sếp đóng mộc RSA lên cái chuỗi SQL đã băm
-    const sign = crypto.createSign('SHA256');
-    sign.update(encryptedSQL);
-    const signature = sign.sign(PRIVATE_KEY, 'base64');
+        // Sếp đóng mộc RSA
+        const sign = crypto.createSign('SHA256');
+        sign.update(encryptedSQL);
+        const signature = sign.sign(PRIVATE_KEY, 'base64');
 
-    // Đóng gói 3 món (chìa khóa IV, câu SQL mù, mộc đỏ) để gửi qua RabbitMQ
-    const messageToSend = {
-        iv: iv.toString('hex'),
-        ciphertext: encryptedSQL,
-        signature: signature
-    };
+        // Gói hàng
+        const messageToSend = {
+            iv: iv,
+            ciphertext: encryptedSQL,
+            signature: signature
+        };
 
-    console.log("🚀 Đã bắn cục SQL mã hóa qua RabbitMQ!");
+        const rabbitUrl = process.env.serverRabitMQ || 'amqp://localhost:5672';
+        const connection = await amqp.connect(rabbitUrl);
+        const channel = await connection.createChannel();
+        const queueName = 'SYNC_DB_QUEUE';
 
+        await channel.assertQueue(queueName, { durable: true });
+        const bufferData = Buffer.from(JSON.stringify(messageToSend));
+        channel.sendToQueue(queueName, bufferData, { persistent: true });
+
+        setTimeout(() => {
+            connection.close();
+        }, 500);
+        console.log("🚀 Đã bắn cục SQL mã hóa qua RabbitMQ thành công!");
+    } catch (error) {
+        console.error("❌ Lỗi gửi RabbitMQ:", error);
+    }
 };
 module.exports = send;

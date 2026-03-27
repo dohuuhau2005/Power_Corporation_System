@@ -48,13 +48,13 @@ app.use('/check', require('../backend/src/testing/protected'))
 // --- Admin Routes ---
 try {
     const countRoute = require('./src/Admin/Count');
-    // const addSiteRoute = require('./Admin/AddSite');
-    //   const sitesRoute = require('./Admin/Sites');
+
+    const sitesRoute = require('./src/Admin/Sites');
     const staffsRoute = require('./src/Admin/Staffs');
 
     app.use('/admin', countRoute);
-    // app.use('/admin/addsite', addSiteRoute);
-    // app.use('/admin', sitesRoute);
+
+    app.use('/admin', sitesRoute);
     app.use('/admin', staffsRoute);
     //  app.use('/admin', require('./Admin/History'));
 } catch (error) {

@@ -12,9 +12,9 @@ router.post('/', async (req, res) => {
 
     try {
         console.log(" đăng nhập:", MaTK, password, ThanhPho, ChiNhanh);
-        const { connection, connectionString } = await connections.getConnectionForBranch(MaTK, password, ThanhPho, ChiNhanh);//chuỗi select
+        const { connection, connectionJson } = await connections.getConnectionForBranch(MaTK, password, ThanhPho, ChiNhanh);//chuỗi select
         connectRole = await connectionsRule.getConnectionForRole(MaTK, password);//chuỗi role
-
+        const connectionString = connectionJson;
         const roleQuery = `
         SELECT ROLE 
         FROM SESSION_ROLES 
@@ -45,7 +45,7 @@ router.post('/', async (req, res) => {
         }
 
         //encrypt connection strinng
-        const encryptedconnect = EncryptAES(connectionString);
+        const { iv, encryptedSQL } = EncryptAES(connectionString);
 
         const token = jwt.sign(
             {
@@ -54,7 +54,8 @@ router.post('/', async (req, res) => {
                 chinhanh: nhanVien.MACN,
                 ThanhPho: ThanhPho,
                 role: userRole,
-                connectionString: encryptedconnect,
+                connectionJson: encryptedSQL,
+                iv: iv,
             },
             process.env.JWT_SECRET || 'secret_key_tam_thoi',
             { expiresIn: '1h' }

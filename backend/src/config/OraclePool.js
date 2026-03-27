@@ -17,7 +17,13 @@ const poolRegistry = new Map();
 async function getConnectionForBranch(username, password, thanhPho, chiNhanh) {
     const poolAlias = `pool_${thanhPho}_${chiNhanh}`;
     const connectString = DB_CONFIG[thanhPho];
-    // 1. KIỂM TRA TỒN TẠI BẰNG IF (Chuẩn Clean Code)
+    const connectionJson = JSON.stringify({
+        u: username,
+        p: password,
+        c: connectString
+    });
+
+    // 1. KIỂM TRA TỒN TẠI BẰNG IF 
     if (!poolRegistry.has(poolAlias)) {
         console.log(`[DB] Đang khởi tạo Pool mới cho ${chiNhanh} tại ${thanhPho}...`);
 
@@ -45,7 +51,7 @@ async function getConnectionForBranch(username, password, thanhPho, chiNhanh) {
     const connect = await pool.getConnection()
     return {
         connection: connect,
-        connectionString: connectString
+        connectionJson: connectionJson,
 
     };
 }

@@ -15,8 +15,13 @@ staff
 ADMIN 
     ALL
 
+====================
+    thiếu 
+          - nếu sửa role sẽ thông báo lên chỗ admin cần nâng cấp tài khoản cho MaVN 
+          - nếu tài khoản của nhân viên bị khóa thì cũng thông báo cho admin để chỉnh tài khoản thật
 
-    
+          -- kiến trúc
+            caching dữ liệu của nhanvien để check
 
 
   
