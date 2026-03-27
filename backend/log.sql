@@ -1035,3 +1035,4 @@ WHERE GRANTEE IN ('NV_201', 'NV_401')
 ORDER BY GRANTEE, TABLE_NAME;
 
 select * from chinhanh
+select hoten,tenCN,nhanvien.maCN,thanhpho,role from nhanvien,chinhanh where nhanvien.maCN=chinhanh.maCN and nhanvien.maNV='NV_000';

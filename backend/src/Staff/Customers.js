@@ -1,34 +1,38 @@
 const express = require('express');
 const router = express.Router();
-const sql = require('mssql');
-const db = require('../src/Config/DBConnection');
-const verifyToken = require('../src/Middleware/verifyToken');
-const { tp1, tp2, tp3 } = require('../src/Config/logger');
-router.get('/customers', verifyToken, async (req, res) => {
+const oracledb = require('oracledb');
+const connections = require('../config/OraclePool');
+const { verifyToken } = require('../middleware/verifyToken');
+const { authorization } = require('../middleware/authorization');
+const DecryptAES = require('../config/DecryptAES');
+const connectionFromJson = require('../config/OraclePoolFromJson');
+
+router.get('/customers', verifyToken, authorization("R_ADMIN", "R_STAFF", "R_MANAGER"), async (req, res) => {
     try {
         const maNV = req.query.maNV;
-        const query = 'use DienLuc SELECT *  FROM khachhang,nhanvien where khachhang.maCN=nhanvien.maCN and nhanvien.maNV=@maNV';
-        const pool1 = await db.GetManh1DBPool();
-        const pool2 = await db.GetManh2DBPool();
-        const pool3 = await db.GetManh3DBPool();
+        //,nhanvien where khachhang.maCN=nhanvien.maCN and nhanvien.maNV=@maNV
+        const query = ' SELECT *  FROM khachhang';
+        const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
 
-        const request1 = pool1.request();
-        const request2 = pool2.request();
-        const request3 = pool3.request();
-        request1.input('maNV', sql.VarChar, maNV);
-        request2.input('maNV', sql.VarChar, maNV);
-        request3.input('maNV', sql.VarChar, maNV);
-        const result2 = await request2.query(query);
-        const result1 = await request1.query(query);
-        const result3 = await request3.query(query);
-        const customers2 = result2.recordset;
-        const customers3 = result3.recordset;
-        const customers1 = result1.recordset;
-        const allCustomers = [...customers1, ...customers2, ...customers3];
+        connect = await connectionFromJson.getConnectionFromJson(connectionJson);
+        const result = await connect.execute(
+            query,
+            {},
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+        const allCustomers = result.rows;
         return res.status(200).json({ success: true, customers: allCustomers });
     } catch (error) {
         console.error("Lỗi khi xuất danh sách khách hàng:", error);
         return res.status(500).json({ success: false, message: "Lỗi máy chủ khi lấy danh sách khách hàng" });
+    } finally {
+        if (connect) {
+            try {
+                await connect.close();
+            } catch (err) {
+                console.error("Lỗi đóng connection:", err);
+            }
+        }
     }
 });
 router.post('/customers', verifyToken, async (req, res) => {

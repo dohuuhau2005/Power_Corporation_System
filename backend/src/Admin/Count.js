@@ -13,7 +13,7 @@ router.get('/CountSite', verifyToken, authorization("R_ADMIN"), async (req, res)
 
     try {
 
-        const query = `SELECT COUNT(maCN) AS SO_LUONG_CN FROM db_dienluc.chinhanh`;
+        const query = `SELECT COUNT(maCN) AS SO_LUONG_CN FROM chinhanh`;
         const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
 
         connect = await connectionFromJson.getConnectionFromJson(connectionJson);
@@ -41,7 +41,7 @@ router.get('/CountSite', verifyToken, authorization("R_ADMIN"), async (req, res)
 router.get('/CountCustomer', verifyToken, authorization("R_ADMIN"), async (req, res) => {
     try {
 
-        const query = `SELECT COUNT(maKH) AS SO_LUONG_KH FROM db_dienluc.khachhang`;
+        const query = `SELECT COUNT(maKH) AS SO_LUONG_KH FROM khachhang`;
         const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
 
         connect = await connectionFromJson.getConnectionFromJson(connectionJson);
@@ -72,7 +72,7 @@ router.get('/CountCustomer', verifyToken, authorization("R_ADMIN"), async (req, 
 router.get('/CountStaff', verifyToken, authorization("R_ADMIN"), async (req, res) => {
     try {
 
-        const query = `SELECT COUNT(maNV) AS SO_LUONG_NV FROM db_dienluc.nhanvien`;
+        const query = `SELECT COUNT(maNV) AS SO_LUONG_NV FROM nhanvien`;
         const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
 
         connect = await connectionFromJson.getConnectionFromJson(connectionJson);

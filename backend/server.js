@@ -61,15 +61,15 @@ try {
     console.warn("⚠️ Cảnh báo: Lỗi import route Admin.", error.message);
 }
 
-// // --- Staff Routes ---
-// try {
-//     app.use('/employee', require('./Staff/Customers'));
-//     app.use('/employee', require('./Staff/Contract'));
-//     app.use('/employee', require('./Staff/bills'));
-//     app.use('/employee', require("./Staff/AllInformation"));
-// } catch (error) {
-//     console.warn("⚠️ Cảnh báo: Lỗi import route Staff.", error.message);
-// }
+// --- Staff Routes ---
+try {
+    app.use('/employee', require('./src/Staff/Customers'));
+    // app.use('/employee', require('./Staff/Contract'));
+    // app.use('/employee', require('./Staff/bills'));
+    app.use('/employee', require("./src/Staff/AllInformation"));
+} catch (error) {
+    console.warn("⚠️ Cảnh báo: Lỗi import route Staff.", error.message);
+}
 
 // // --- Question Route ---
 // try {
