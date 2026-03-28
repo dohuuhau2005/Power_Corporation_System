@@ -9,7 +9,7 @@ const send = require('../config/SeenQuery');
 router.get('/sites', verifyToken, authorization("R_ADMIN"), async (req, res) => {
     try {
 
-        const query = 'SELECT *  FROM db_dienluc.chinhanh';
+        const query = 'SELECT *  FROM chinhanh';
         const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
 
         connect = await connectionFromJson.getConnectionFromJson(connectionJson);

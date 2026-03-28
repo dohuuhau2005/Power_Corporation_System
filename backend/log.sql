@@ -1036,3 +1036,20 @@ ORDER BY GRANTEE, TABLE_NAME;
 
 select * from chinhanh
 select hoten,tenCN,nhanvien.maCN,thanhpho,role from nhanvien,chinhanh where nhanvien.maCN=chinhanh.maCN and nhanvien.maNV='NV_000';
+
+
+
+-- 1. Chui vào nhà Tổng Bộ và cấp sổ đỏ
+ALTER SESSION SET CONTAINER = TongBo;
+CREATE OR REPLACE DIRECTORY backup_dir AS 'C:\OracleBackup';
+GRANT READ, WRITE ON DIRECTORY backup_dir TO sys;
+
+-- 2. Chui vào nhà Chi nhánh 1 (TP1) và cấp sổ đỏ
+ALTER SESSION SET CONTAINER = TP1;
+CREATE OR REPLACE DIRECTORY backup_dir AS 'C:\OracleBackup';
+GRANT READ, WRITE ON DIRECTORY backup_dir TO sys;
+
+-- 3. Chui vào nhà Chi nhánh 2 (TP2) và cấp sổ đỏ
+ALTER SESSION SET CONTAINER = TP2;
+CREATE OR REPLACE DIRECTORY backup_dir AS 'C:\OracleBackup';
+GRANT READ, WRITE ON DIRECTORY backup_dir TO sys;
