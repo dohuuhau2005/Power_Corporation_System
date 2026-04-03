@@ -1,15 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const sql = require('mssql');
-const db = require('../src/Config/DBConnection');
-const { ulid } = require('ulid')
-const { tp1, tp2, tp3 } = require('../src/Config/logger');
-const verifyToken = require('../src/Middleware/verifyToken');
-router.get("/contracts", verifyToken, async (req, res) => {
-    const manv = req.query.maNV;
+const { ulid } = require('ulid');
+const oracledb = require('oracledb');
+const connectionFromJson = require('../config/OraclePoolFromJson')
+const { authorization } = require('../middleware/authorization');
+const { verifyToken } = require('../middleware/verifyToken');
+const DecryptAES = require('../config/DecryptAES');
+const send = require('../config/SeenQuery');
+
+
+router.get("/contracts", verifyToken, authorization("R_ADMIN", "R_STAFF", "R_MANAGER"), async (req, res) => {
+    const manv = req.user.id;
+    let connect;
     try {
         const query = `
-    use DienLuc
     SELECT hd.soHD,
            hd.maKH,
            kh.tenKH,
@@ -20,77 +24,48 @@ router.get("/contracts", verifyToken, async (req, res) => {
            hd.isPaid
     FROM hopdong hd
     INNER JOIN khachhang kh ON hd.maKH = kh.maKH
-    INNER JOIN nhanvien nv ON nv.maCN = kh.maCN
-    WHERE nv.maNV = @manv
+
+  
 `;
 
-        const pool1 = await db.GetManh1DBPool();
-        const pool2 = await db.GetManh2DBPool();
-        const pool3 = await db.GetManh3DBPool();
-        const result1 = await pool1.request().input("manv", sql.VarChar, manv).query(query);
-        const result2 = await pool2.request().input("manv", sql.VarChar, manv).query(query);
-        const result3 = await pool3.request().input("manv", sql.VarChar, manv).query(query);
-        const hopdong1 = result1.recordset;
-        const hopdong2 = result2.recordset;
-        const hopdong3 = result3.recordset;
-        const allcus = [...hopdong1, ...hopdong2, ...hopdong3]
-        return res.status(200).json({ success: true, customers: allcus, message: "lấy danh sách hợp đồng thành công" });
+        const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
+
+        connect = await connectionFromJson.getConnectionFromJson(connectionJson, req.user.chinhanh);
+
+        const result = await connect.execute(
+            query,
+            {},
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+        const allcus = result.rows;
+        return res.status(200).json({ success: true, contracts: allcus, message: "lấy danh sách hợp đồng thành công" });
 
     } catch (error) {
         console.log(error)
         return res.status(500).json({ success: false, message: "lấy danh sách hợp đồng thất bại" });
+    } finally {
+        if (connect) {
+            try {
+                await connect.close();
+            } catch (err) {
+                console.error("Lỗi đóng connection:", err);
+            }
+        }
     }
 
 
 });
 
-router.post("/contracts", verifyToken, async (req, res) => {
-    const { thanhpho, maKH, soDienKe, kwDinhMuc, dongiaKW } = req.body;
+router.post("/contracts", verifyToken, authorization("R_ADMIN", "R_MANAGER", "R_STAFF"), async (req, res) => {
+    const { maKH, soDienKe, kwDinhMuc, dongiaKW } = req.body;
+    const soHD = ulid();
     try {
         const query = `
-    use DienLuc
-   insert into hopdong (soHD,maKH,soDienKe,kwDinhMuc,dongiaKW) values (@soHD,@maKH,@soDienKe,@kwDinhMuc,@dongiaKW)
+
+   insert into hopdong (soHD,maKH,soDienKe,kwDinhMuc,dongiaKW) values ('${soHD}','${maKH}','${soDienKe}',${kwDinhMuc},${dongiaKW})
 `;
 
-        const pool1 = await db.GetManh1DBPool();
-        const pool2 = await db.GetManh2DBPool();
-        const pool3 = await db.GetManh3DBPool();
-        const soHD = ulid();
-        if (thanhpho === "TP1") {
-            console.log("runnnnnnnnnnnnnn1111111111111")
-            const result1 = await pool1.request()
-                .input("soHD", sql.VarChar, soHD)
-                .input("maKH", sql.VarChar, maKH)
-                .input("soDienKe", sql.Int, soDienKe)
-                .input("kwDinhMuc", sql.Int, kwDinhMuc)
-                .input("dongiaKW", sql.Int, dongiaKW)
-                .query(query);
-            if (result1.rowsAffected[0] > 0)
-                tp1.insert("thêm hợp đồng" + soHD, { soHD: soHD, maKH: maKH, soDienKe: soDienKe, kwDinhMuc: kwDinhMuc, dongiaKW: dongiaKW });
-        }
-
-        if (thanhpho === "TP2") {
-            const result2 = await pool2.request().input("soHD", sql.VarChar, soHD)
-                .input("maKH", sql.VarChar, maKH)
-                .input("soDienKe", sql.Int, soDienKe)
-                .input("kwDinhMuc", sql.Int, kwDinhMuc)
-                .input("dongiaKW", sql.Int, dongiaKW)
-                .query(query);
-            if (result2.rowsAffected[0] > 0)
-                tp2.insert("thêm hợp đồng" + soHD, { soHD: soHD, maKH: maKH, soDienKe: soDienKe, kwDinhMuc: kwDinhMuc, dongiaKW: dongiaKW });
-        }
-        if (thanhpho === "TP3") {
-            const result3 = await pool3.request().input("soHD", sql.VarChar, soHD)
-                .input("maKH", sql.VarChar, maKH)
-                .input("soDienKe", sql.Int, soDienKe)
-                .input("kwDinhMuc", sql.Int, kwDinhMuc)
-                .input("dongiaKW", sql.Int, dongiaKW)
-                .query(query);
-            if (result3.rowsAffected[0] > 0)
-                tp3.insert("thêm hợp đồng" + soHD, { soHD: soHD, maKH: maKH, soDienKe: soDienKe, kwDinhMuc: kwDinhMuc, dongiaKW: dongiaKW });
-        }
-
-        console.log("toangggggggggg")
+        await send(query);
         return res.status(200).json({ success: true, message: "Thêm hợp đồng thành công" });
 
     } catch (error) {
@@ -100,6 +75,62 @@ router.post("/contracts", verifyToken, async (req, res) => {
 
 
 });
+router.put("/contracts/:id", verifyToken, authorization("R_ADMIN", "R_MANAGER"), async (req, res) => {
+    const { maKH, soDienKe, kwDinhMuc, dongiaKW } = req.body;
+    const soHD = req.params.id;
+    try {
+        let updateFields = []; // Dùng mảng để chứa
 
+        if (maKH != null) updateFields.push(`maKH='${maKH}'`);
+        if (soDienKe != null) updateFields.push(`soDienKe=${soDienKe}`);
+        if (kwDinhMuc != null) updateFields.push(`kwDinhMuc=${kwDinhMuc}`);
+        if (dongiaKW != null) updateFields.push(`dongiaKW=${dongiaKW}`);
+
+
+        if (updateFields.length === 0) {
+            return res.status(400).json({ message: "Không có dữ liệu gì để cập nhật!" });
+        }
+
+        // Tự động nối mảng bằng dấu phẩy
+        const query = `UPDATE hopdong SET ${updateFields.join(', ')} WHERE soHD = '${soHD}'`;
+
+
+        await send(query);
+        return res.status(200).json({ success: true, message: "Cập nhật hợp đồng thành công" });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ success: false, message: "Cập nhật hợp đồng thất bại" });
+    }
+});
+router.delete("/contracts/:id", verifyToken, authorization("R_ADMIN", "R_MANAGER"), async (req, res) => {
+    const soHD = req.params.id;
+    try {
+        const query = `
+            DELETE FROM hopdong
+            WHERE soHD = ${soHD}
+        `;
+        await send(query);
+        return res.status(200).json({ success: true, message: "Xóa hợp đồng thành công" });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ success: false, message: "Xóa hợp đồng thất bại" });
+    }
+});
+router.get("/contractsIsNotPaid/:id", verifyToken, authorization("R_ADMIN", "R_MANAGER", "R_STAFF"), async (req, res) => {
+    const SDT = req.params.id;
+
+    try {
+        const queryIsPaid = `select * from hopdong join khachhang on hopdong.maKH = khachhang.maKH where hopdong.isPaid=0 and khachhang.SDT='${SDT}';`;
+        const responseIspaid = await checkRPC(queryIsPaid, process.env.checkQueue || 'CHECK_QUEUE');
+        if (responseIspaid.hasUnpaidContract) {
+
+            return res.status(400).json({ isAdded: false, success: false, contracts: responseIspaid.contracts, message: `Khách hàng đã có hợp đồng chưa thanh toán ở chi nhánh ${responseIspaid.branch} với số hợp đồng là ${responseIspaid.soHD}` });
+        }
+        return res.status(200).json({ success: true, message: "Khách hàng không có hợp đồng chưa thanh toán nào" });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ success: false, message: "Lấy hợp đồng chưa thanh toán thất bại" });
+    }
+});
 module.exports = router;
 

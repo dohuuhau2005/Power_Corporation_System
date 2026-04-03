@@ -10,13 +10,13 @@ const connectionFromJson = require('../config/OraclePoolFromJson');
 
 
 router.get('/CountSite', verifyToken, authorization("R_ADMIN"), async (req, res) => {
-
+    let connect;
     try {
 
         const query = `SELECT COUNT(maCN) AS SO_LUONG_CN FROM chinhanh`;
         const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
 
-        connect = await connectionFromJson.getConnectionFromJson(connectionJson);
+        connect = await connectionFromJson.getConnectionFromJson(connectionJson, req.user.chinhanh);
 
         const result = await connect.execute(
             query,
@@ -39,12 +39,13 @@ router.get('/CountSite', verifyToken, authorization("R_ADMIN"), async (req, res)
     }
 });
 router.get('/CountCustomer', verifyToken, authorization("R_ADMIN"), async (req, res) => {
+    let connect;
     try {
 
         const query = `SELECT COUNT(maKH) AS SO_LUONG_KH FROM khachhang`;
         const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
 
-        connect = await connectionFromJson.getConnectionFromJson(connectionJson);
+        connect = await connectionFromJson.getConnectionFromJson(connectionJson, req.user.chinhanh);
 
         const result = await connect.execute(
             query,
@@ -70,12 +71,13 @@ router.get('/CountCustomer', verifyToken, authorization("R_ADMIN"), async (req, 
 });
 
 router.get('/CountStaff', verifyToken, authorization("R_ADMIN"), async (req, res) => {
+    let connect;
     try {
 
         const query = `SELECT COUNT(maNV) AS SO_LUONG_NV FROM nhanvien`;
         const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
 
-        connect = await connectionFromJson.getConnectionFromJson(connectionJson);
+        connect = await connectionFromJson.getConnectionFromJson(connectionJson, req.user.chinhanh);
 
         const result = await connect.execute(
             query,

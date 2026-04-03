@@ -7,13 +7,13 @@ const DecryptAES = require('../config/DecryptAES'); // Gọi hàm giải mã c�
 
 
 const RABBIT_URL = process.env.serverRabitMQ;
-const QUEUE_NAME = process.env.QUEUE_NAME;
+const QUEUE_NAME = process.env.QUEUE_NAME_CHECK;
 
 // 2. Móc cái Public Key để xác thực chữ ký (Nhớ trỏ đúng đường dẫn file)
 const publicKeyPath = path.join(__dirname, '../../public_chuẩn.pem');
 const PUBLIC_KEY = fs.readFileSync(publicKeyPath, 'utf8');
 const pool = require('../config/OraclePoolAuthentication');
-const startWorker = async () => {
+const startWorkerCheckRequest = async () => {
     try {
         const connection = await amqp.connect(RABBIT_URL);
         const channel = await connection.createChannel();
@@ -32,7 +32,6 @@ const startWorker = async () => {
             if (msg !== null) {
                 let connect;
                 try {
-
                     // 1. Bóc hộp quà JSON
                     const payload = JSON.parse(msg.content.toString());
                     const { iv, ciphertext, signature } = payload;
@@ -54,16 +53,39 @@ const startWorker = async () => {
                     // 3. GIẢI MÃ AES LẤY SQL (Truyền y chang format hàm DecryptAES của ông)
                     const rawSQL = DecryptAES({ iv, ciphertext });
                     console.log(" Câu SQL giải mã được:", rawSQL);
-                    connect = await pool.getConnectionForRole(process.env.user, process.env.password);
+
                     // 4. PHANG XUỐNG DATABASE CHI NHÁNH
 
 
-
+                    connect = await pool.getConnectionForRole(process.env.user, process.env.password);
                     // Chạy lệnh SQL và Auto Commit luôn
-                    await connect.execute(rawSQL, [], { autoCommit: true });
+                    const resultcheck = await connect.execute(rawSQL, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
+                    if (resultcheck.rows.length > 0) {
+                        console.log(" Kết quả trả về từ Database Chi nhánh:", resultcheck.rows);
+                        responseToAPI = {
+                            hasUnpaidContract: true, // Báo cho API biết là có nợ
+                            contracts: resultcheck.rows   // Quăng luôn cục data nợ về nếu cần
+                        };
+                    } else {
+                        console.log(" Câu SQL thực thi thành công nhưng không trả về dữ liệu nào.");
+                        responseToAPI = {
+                            hasUnpaidContract: false
+
+                        };
+                    }
+
+                    channel.sendToQueue(
+                        msg.properties.replyTo, // Ném vào đúng cái hòm thư API yêu cầu
+                        Buffer.from(JSON.stringify(responseToAPI)), //  data kết quả
+                        {
+                            correlationId: msg.properties.correlationId // Đính kèm cái id hội thoại
+                        }
+                    );
+
+                    console.log(`[Worker] Đã đá thư trả lời về cho API thành công!`);
 
 
-                    console.log(" Đã Insert/Update thành công xuống Database Chi nhánh!");
+
 
                     // 5. CHỐT ĐƠN VỚI RABBITMQ (Quan trọng!)
 
@@ -71,24 +93,9 @@ const startWorker = async () => {
                     console.log(" Xong quy trình, tiếp tục hóng...\n");
 
                 } catch (err) {
+                    channel.ack(msg);
 
                     console.error("❌ Lỗi trong quá trình xử lý tin nhắn:", err);
-                    channel.nack(msg, false, false);
-
-
-                    // Khai báo một gói tin chứa chi tiết lỗi
-                    const errorReport = {
-                        status: 'FAILED',
-                        reason: err.message,
-                        time: new Date().toISOString(),
-                        originalData: msg.content.toString() // Trả lại luôn cái xác chết để Tổng bộ khám nghiệm
-                    };
-
-                    // Bắn thẳng gói tin lỗi này vào một Queue chuyên chứa rác/lỗi (ví dụ: 'QUEUE_RETURN_ERROR')
-                    const ERROR_QUEUE = 'QUEUE_RETURN_ERROR';
-                    channel.sendToQueue(ERROR_QUEUE, Buffer.from(JSON.stringify(errorReport)), {
-                        persistent: true // Đảm bảo tin nhắn lỗi không bị mất nếu sập server
-                    });
 
                 } finally {
                     if (connect) {
@@ -107,5 +114,5 @@ const startWorker = async () => {
     }
 };
 
-// Khởi động con ong chăm chỉ
-module.exports = startWorker;
+
+module.exports = startWorkerCheckRequest;

@@ -7,7 +7,7 @@ const send = async (query) => {
     try {
         const keyPath = path.join(__dirname, '../../private_chuẩn.pem');
         const PRIVATE_KEY = fs.readFileSync(keyPath, 'utf8');
-        console.log(PRIVATE_KEY);
+
         const { iv, encryptedSQL } = EncryptAES(query);
 
         // Sếp đóng mộc RSA

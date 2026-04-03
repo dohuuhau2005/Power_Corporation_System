@@ -13,10 +13,11 @@ const send = require('../config/SeenQuery');
 const EncryptAES = require('../config/EncryptAES');
 const connectionFromJson = require('../config/OraclePoolFromJson')
 router.get('/staffs', verifyToken, authorization("R_ADMIN"), async (req, res) => {
+    let connect;
     try {
         const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
 
-        connect = await connectionFromJson.getConnectionFromJson(connectionJson);
+        connect = await connectionFromJson.getConnectionFromJson(connectionJson, req.user.chinhanh);
         const query = `SELECT * FROM db_dienluc.nhanvien`;
         const result = await connect.execute(
             query,
@@ -40,13 +41,14 @@ router.get('/staffs', verifyToken, authorization("R_ADMIN"), async (req, res) =>
     }
 });
 router.post('/staffs', verifyToken, authorization("R_ADMIN"), async (req, res) => {
+    let connect;
     try {
         const { maNV, hoten, maCN, role } = req.body;
         const roleRequest = req.user.role;
         const roleStaff = role;
         const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
 
-        connect = await connectionFromJson.getConnectionFromJson(connectionJson)
+        connect = await connectionFromJson.getConnectionFromJson(connectionJson, req.user.chinhanh);
         // --- PHẦN 1: KIỂM TRA TỒN TẠI (Tạo request riêng để check) ---
         // Chỉ input maNV vào đây để check
         const checkQuery = `SELECT COUNT(maNV) AS SO_LUONG_NV FROM db_dienluc.nhanvien  WHERE maNV = :maNV_param `;
@@ -85,6 +87,7 @@ router.post('/staffs', verifyToken, authorization("R_ADMIN"), async (req, res) =
         }
     }
 });
+//block thôi 
 router.delete('/staffs/:id', verifyToken, authorization("R_ADMIN"), async (req, res) => {
     try {
         const idUser = req.params.id;
@@ -100,17 +103,17 @@ router.delete('/staffs/:id', verifyToken, authorization("R_ADMIN"), async (req, 
         return res.status(500).json({ success: false, message: "Lỗi máy chủ khi xóa tài khoản nhân viên" });
     }
 });
-router.put('/staffs/:id', verifyToken, async (req, res) => {
+router.put('/staffs/:id', verifyToken, authorization("R_ADMIN", "R_MANAGER"), async (req, res) => {
     try {
         const idUser = req.params.id;
-        const { hoten, maCN, role } = req.body;
+        const { hoten, maCN, role, status } = req.body;
 
         let updateFields = []; // Dùng mảng để chứa
 
         if (hoten != null) updateFields.push(`hoten=N'${hoten}'`);
         if (maCN != null) updateFields.push(`maCN='${maCN}'`);
         if (role != null) updateFields.push(`role='${role}'`);
-
+        if (status != null) updateFields.push(`status=${status}`);
 
         if (updateFields.length === 0) {
             return res.status(400).json({ message: "Không có dữ liệu gì để cập nhật!" });

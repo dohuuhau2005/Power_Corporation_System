@@ -1,11 +1,13 @@
 const oracledb = require('oracledb');
 const poolRegistry = new Map();
 const SCHEMA_MAP = {
-    'localhost:1521/TongBo': 'db_dienluc',
-    'localhost:1521/TP1': 'db_dienlucCN1', // Có thể là db_dienlucCN3 tùy config ông set
-    'localhost:1521/TP2': 'db_dienlucCN2'
+    'TongBo': 'db_dienluc',
+    'CN1': 'db_dienlucCN1',
+    'CN2': 'db_dienlucCN2',
+    'CN3': 'db_dienlucCN3',
+    'CN4': 'db_dienlucCN4'
 };
-async function getConnectionFromJson(rawComboString) {
+async function getConnectionFromJson(rawComboString, chinhanh) {
     // 1. Ép chuỗi JSON về lại Object
     const dbInfo = JSON.parse(rawComboString);
 
@@ -38,7 +40,7 @@ async function getConnectionFromJson(rawComboString) {
     const pool = oracledb.getPool(poolAlias);
     const connect = await pool.getConnection();
     //6 . phải buộc chuyển schema
-    const targetSchema = SCHEMA_MAP[dbInfo.c] || 'db_dienluc';
+    const targetSchema = SCHEMA_MAP[chinhanh] || 'db_dienluc';
     await connect.execute(`ALTER SESSION SET CURRENT_SCHEMA = ${targetSchema}`);
     // Chỉ cần trả về cái connection là đủ để ông bóp cò execute() rồi
     return connect;
