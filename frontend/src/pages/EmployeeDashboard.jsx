@@ -1,0 +1,18 @@
+import { Routes, Route } from 'react-router-dom'
+import EmployeeLayout from '../components/EmployeeLayout'
+import EmployeeOverview from './employee/EmployeeOverview'
+import CustomersManagement from './employee/CustomersManagement'
+import BillsManagement from './employee/BillsManagement'
+import './EmployeeDashboard.css'
+
+export default function EmployeeDashboard() {
+  return (
+    <EmployeeLayout>
+      <Routes>
+        <Route path="/" element={<EmployeeOverview />} />
+        <Route path="/customers" element={<CustomersManagement />} />
+        <Route path="/bills" element={<BillsManagement />} />
+      </Routes>
+    </EmployeeLayout>
+  )
+}
