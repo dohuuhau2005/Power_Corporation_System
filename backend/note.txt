@@ -17,11 +17,29 @@ ADMIN
 
 ====================
     thiếu 
-          - nếu sửa role sẽ thông báo lên chỗ admin cần nâng cấp tài khoản cho MaVN 
+          - nếu sửa role sẽ thông báo lên chỗ admin cần nâng cấp tài khoản cho MaVN (status)
           - nếu tài khoản của nhân viên bị khóa thì cũng thông báo cho admin để chỉnh tài khoản thật
 
           -- kiến trúc
             caching dữ liệu của nhanvien để check
 
 
-  
+  -- tạo kh -> sửa kh 
+
+
+
+  test
+  thêm staff
+  thay đổi staff
+   xem lịch sửa
+
+   vào quản lý
+   tạo hợp đồng
+   sửa hop dong
+   thanh toán hd
+   xóa hóa đơn
+   xóa hd
+
+   nhân viên 
+   câu 1
+   câu 2

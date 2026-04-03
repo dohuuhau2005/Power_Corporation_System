@@ -15,3 +15,5 @@ app.listen(PORT, () => {
     console.log("========================================");
 });
 startWorker();
+startWorkerCheckRequest = require('./src/main/GetCheckRequest')
+startWorkerCheckRequest();

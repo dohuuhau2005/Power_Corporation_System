@@ -15,8 +15,10 @@ ALTER SESSION SET CONTAINER = TongBo;
 ALTER SESSION SET CURRENT_SCHEMA = db_dienluc;
 
 
-select * from nhanvien;
-
+select * from khachhang;
+alter session set current_schema =NV_101 ;
+alter session set current_schema =db_dienlucCN3 ;--NV_101
+select * from hopdong; 
 
 create database UsersCsdlPt;
 use UsersCsdlPt
@@ -411,7 +413,14 @@ ALTER SESSION SET CURRENT_SCHEMA = db_dienlucCN2;
 ALTER SESSION SET CURRENT_SCHEMA = db_dienlucCN4;
 
 
-
+CREATE TABLE lichSuChuyenCongTac(
+    id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY, -- Chuẩn đẻ ID tự động của Oracle
+    maNV VARCHAR2(20),
+     maKH VARCHAR2(20),
+    NgayChuyen DATE DEFAULT SYSDATE, 
+    maCNCu VARCHAR2(20),
+    maCNMoi VARCHAR2(20)
+);
 
 -- 1. Bảng chinhanh
 CREATE TABLE chinhanh (
@@ -580,6 +589,10 @@ BEGIN
             
         -- Kịch bản 3.2: Nhân viên thuyên chuyển công tác (Đổi maCN)
         ELSE
+            -- 🌟 LOGIC MỚI: GHI VÀO LỊCH SỬ THUYÊN CHUYỂN TRƯỚC 🌟
+            INSERT INTO lichSuChuyenCongTac (maNV, maCNCu, maCNMoi) 
+            VALUES (:OLD.maNV, :OLD.maCN, :NEW.maCN);
+
             -- Xóa data ở Chi nhánh cũ
             IF :OLD.maCN = 'CN1' THEN DELETE FROM nhanvien@link_to_cn1 WHERE maNV = :OLD.maNV;
             ELSIF :OLD.maCN = 'CN2' THEN DELETE FROM nhanvien@link_to_cn2 WHERE maNV = :OLD.maNV;
@@ -635,6 +648,10 @@ BEGIN
             
         -- Kịch bản 3.2: Khách hàng chuyển sang Chi nhánh khác
         ELSE
+            -- 🌟 LOGIC MỚI BỔ SUNG: Ghi lại lịch sử khách hàng chuyển chi nhánh 🌟
+            INSERT INTO lichSuChuyenCongTac (maKH, maCNCu, maCNMoi) 
+            VALUES (:OLD.maKH, :OLD.maCN, :NEW.maCN);
+
             -- BƯỚC A: Trảm (Delete) dữ liệu ở Chi nhánh cũ
             IF :OLD.maCN = 'CN1' THEN DELETE FROM khachhang@link_to_cn1 WHERE maKH = :OLD.maKH;
             ELSIF :OLD.maCN = 'CN2' THEN DELETE FROM khachhang@link_to_cn2 WHERE maKH = :OLD.maKH;
@@ -841,7 +858,7 @@ ALTER SESSION SET CURRENT_SCHEMA = db_dienluc;
 DELETE FROM hoadon;
 DELETE FROM hopdong;
 DELETE FROM khachhang;
-DELETE FROM nhanvien;
+DELETE FROM nhanvien ; -- Giữ lại ông Trùm ở Tổng Bộ
 DELETE FROM chinhanh;
 
 -- Bắt buộc phải COMMIT để chốt giao dịch, Trigger mới chốt theo
@@ -851,7 +868,16 @@ COMMIT;
 
 select * from nhanvien
 select * from chinhanh
-
+    SELECT hd.soHD,
+           hd.maKH,
+           kh.tenKH,
+           hd.ngayKy,
+           hd.soDienKe,
+           hd.kwDinhMuc,
+           hd.dongiaKW,
+           hd.isPaid
+    FROM hopdong hd
+    INNER JOIN khachhang kh ON hd.maKH = kh.maKH
 
 
 --test api
@@ -948,7 +974,7 @@ COMMIT;
 
 
 ALTER SESSION SET CONTAINER = TP1;
-
+-- Thành công vì NV_301 có quyền SELECT trên Schema CN3
 -- Tạo acc để API có thể login vào TP1
 CREATE USER NV_101 IDENTIFIED BY 123456; 
 CREATE USER NV_301 IDENTIFIED BY 123456; 
@@ -1053,3 +1079,13 @@ GRANT READ, WRITE ON DIRECTORY backup_dir TO sys;
 ALTER SESSION SET CONTAINER = TP2;
 CREATE OR REPLACE DIRECTORY backup_dir AS 'C:\OracleBackup';
 GRANT READ, WRITE ON DIRECTORY backup_dir TO sys;
+
+--CHECK XEM CÓ HỢP ĐỒNG HAY KHÔNG 
+--NẾU CÓ THÌ HIỂN THỊ SỐ HỢP ĐỒNG VÀ NGÀY KÝ VÀ CÓ THỂ THANH TOÁN HỢP ĐỒNG ĐÓ. 
+--NẾU KHÔNG THÌ TẠO KHÁCH HÀNG
+select SOHD,NGAYKY from hopdong 
+join khachhang on hopdong.maKH = khachhang.maKH
+join chinhanh on khachhang.maCN = chinhanh.maCN 
+where hopdong.isPaid=0 and maKH=:maKH
+
+

@@ -7,12 +7,13 @@ const { verifyToken } = require('../middleware/verifyToken');
 const { authorization } = require('../middleware/authorization');
 const send = require('../config/SeenQuery');
 router.get('/sites', verifyToken, authorization("R_ADMIN"), async (req, res) => {
+    let connect;
     try {
 
         const query = 'SELECT *  FROM chinhanh';
         const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
 
-        connect = await connectionFromJson.getConnectionFromJson(connectionJson);
+        connect = await connectionFromJson.getConnectionFromJson(connectionJson, req.user.chinhanh);
 
         const result = await connect.execute(
             query,
@@ -36,7 +37,7 @@ router.get('/sites', verifyToken, authorization("R_ADMIN"), async (req, res) => 
     }
 });
 
-router.put('/sites/:id', verifyToken, authorization("R_ADMIN"), async (req, res) => {
+router.put('/sites/:id', verifyToken, authorization("R_ADMIN", "R_MANAGER"), async (req, res) => {
     try {
         const siteName = req.body.tenCN;
         const query = `update chinhanh set tenCN = N'${siteName}' where maCN = '${req.params.id}'`;

@@ -6,15 +6,18 @@ const { verifyToken } = require('../middleware/verifyToken');
 const { authorization } = require('../middleware/authorization');
 const DecryptAES = require('../config/DecryptAES');
 const connectionFromJson = require('../config/OraclePoolFromJson');
-
+const checkRPC = require('../config/CheckRPC');
+const send = require('../config/SeenQuery');
+const { ulid } = require('ulid');
 router.get('/customers', verifyToken, authorization("R_ADMIN", "R_STAFF", "R_MANAGER"), async (req, res) => {
+    let connect;
     try {
         const maNV = req.query.maNV;
         //,nhanvien where khachhang.maCN=nhanvien.maCN and nhanvien.maNV=@maNV
         const query = ' SELECT *  FROM khachhang';
         const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
 
-        connect = await connectionFromJson.getConnectionFromJson(connectionJson);
+        connect = await connectionFromJson.getConnectionFromJson(connectionJson, req.user.chinhanh);
         const result = await connect.execute(
             query,
             {},
@@ -35,47 +38,27 @@ router.get('/customers', verifyToken, authorization("R_ADMIN", "R_STAFF", "R_MAN
         }
     }
 });
-router.post('/customers', verifyToken, async (req, res) => {
+
+//ứng dụng rabitMQ vào việc trao đổi dữ liệu giữa các service.
+router.post('/customers', verifyToken, authorization("R_ADMIN", "R_MANAGER", "R_STAFF"), async (req, res) => {
     try {
         //đã có ở chi nhánh khác chưa
-        const { maKH, tenKH, maCN, thanhpho } = req.body;
+        const { tenKH, SDT } = req.body;
+        const maCN = req.user.chinhanh;
+        const maKH = ulid();
         // Nếu có thì check tổng xem có hợp đồng chưa thanh toán bên khác hay không và hợp đồng bao nhiêu
-        const queryIsPaid = `use DienLuc
-select * from hopdong where hopdong.isPaid=0 and maKH=@maKH`;
+        const queryIsPaid = `select * from khachhang  where  SDT='${SDT}'`;
+        const responseIspaid = await checkRPC(queryIsPaid, process.env.checkQueue || 'CHECK_QUEUE');
+        if (responseIspaid.hasUnpaidContract) {
 
-        const pool1 = await db.GetManh1DBPool();
-        const pool2 = await db.GetManh2DBPool();
-        const pool3 = await db.GetManh3DBPool();
-
-
-        const result1 = await pool1.request().input("maKH", sql.VarChar, maKH).query(queryIsPaid);
-        const result2 = await pool2.request().input("maKH", sql.VarChar, maKH).query(queryIsPaid);
-        const result3 = await pool3.request().input("maKH", sql.VarChar, maKH).query(queryIsPaid);
-        if (result1.recordset.length !== 0 || result2.recordset.length !== 0 || result3.recordset.length !== 0) {
-            const sum = [...result1.recordset, ...result2.recordset, ...result3.recordset];
-            return res.status(200).json({ isAdded: false, success: true, message: "Đã có hợp đồng tại chi nhánh khác chưa thanh toán" });
-
+            return res.status(400).json({ isAdded: false, success: true, contracts: responseIspaid.contracts, message: `Khách hàng đã có hợp đồng chưa thanh toán ở chi nhánh ${responseIspaid.branch} với số hợp đồng là ${responseIspaid.soHD}` });
         }
+        const query = `INSERT INTO khachhang (maKH, tenKH, maCN, SDT) VALUES ('${maKH}', N'${tenKH}', '${maCN}', '${SDT}')`;
+        await send(query);
 
-        const queryAdd = "insert khachhang (maKH,tenKH,maCN) values (@maKH, @tenKH,@maCN)";
-        if (thanhpho === "TP1") {
-            const resultKh1 = await pool1.request().input("maKH", sql.VarChar, maKH).input("tenKH", sql.NVarChar, tenKH).input("maCN", sql.VarChar, maCN).query(queryAdd);
-            if (resultKh1.rowsAffected[0] > 0)
-                tp1.insert("Thêm khách hàng " + maKH, { maKH: maKH, tenKH: tenKH, maCN: maCN });
-        }
-        if (thanhpho === "TP2") {
-            const resultKh2 = await pool2.request().input("maKH", sql.VarChar, maKH).input("tenKH", sql.NVarChar, tenKH).input("maCN", sql.VarChar, maCN).query(queryAdd);
-            if (resultKh2.rowsAffected[0] > 0)
-                tp2.insert("Thêm khách hàng " + maKH, { maKH: maKH, tenKH: tenKH, maCN: maCN });
 
-        }
-        if (thanhpho === "TP3") {
-            const resultKh3 = await pool3.request().input("maKH", sql.VarChar, maKH).input("tenKH", sql.NVarChar, tenKH).input("maCN", sql.VarChar, maCN).query(queryAdd);
-            if (resultKh3.rowsAffected[0] > 0)
-                tp3.insert("Thêm khách hàng " + maKH, { maKH: maKH, tenKH: tenKH, maCN: maCN });
-        }
 
-        //nếu không có hợp đồng hoặc toàn bộ được đã chi trả thì thêm khách hàng vào chi nhánh hiện tại
+
         return res.status(200).json({ isAdded: true, success: true, message: "Thêm khách hàng thành công" });
     } catch (error) {
         console.error("Lỗi khi thêm khách hàng:", error);
@@ -83,70 +66,53 @@ select * from hopdong where hopdong.isPaid=0 and maKH=@maKH`;
     }
 
 });
-router.put('/customers/:id', verifyToken, async (req, res) => {
+router.put('/customers/:id', verifyToken, authorization("R_ADMIN", "R_MANAGER"), async (req, res) => {
     try {
         const customerId = req.params.id;
-        const { tenKH, maNV } = req.body;
-        const pool1 = await db.GetManh1DBPool();
-        const pool2 = await db.GetManh2DBPool();
-        const pool3 = await db.GetManh3DBPool();
-        const request1 = pool1.request();
-        const request2 = pool2.request();
-        const request3 = pool3.request();
-        request1.input('maKH', sql.VarChar, customerId);
-        request1.input('tenKH', sql.NVarChar, tenKH);
-        request1.input('maNV', sql.VarChar, maNV);
-        request2.input('maKH', sql.VarChar, customerId);
-        request2.input('tenKH', sql.NVarChar, tenKH);
-        request2.input('maNV', sql.VarChar, maNV);
-        request3.input('maKH', sql.VarChar, customerId);
-        request3.input('tenKH', sql.NVarChar, tenKH);
-        request3.input('maNV', sql.VarChar, maNV);
-        const query = 'use DienLuc UPDATE khachhang SET tenKH=@tenKH WHERE maKH=@maKH and maCN=(SELECT maCN FROM nhanvien WHERE maNV=@maNV)';
-        const result1 = await request1.query(query);
-        const result2 = await request2.query(query);
-        const result3 = await request3.query(query);
-        if (result1.rowsAffected[0] > 0)
-            tp1.update("Chỉnh sửa khách hàng " + customerId, { maKH: customerId, tenKH: tenKH });
-        if (result2.rowsAffected[0] > 0)
-            tp2.update("Chỉnh sửa khách hàng " + customerId, { maKH: customerId, tenKH: tenKH });
-        if (result3.rowsAffected[0] > 0)
-            tp3.update("Chỉnh sửa khách hàng " + customerId, { maKH: customerId, tenKH: tenKH });
+        const { tenKH, maCN, SDT } = req.body;
+        let updateFields = []; // Dùng mảng để chứa
+
+        if (tenKH != null) updateFields.push(`tenKH=N'${tenKH}'`);
+        if (maCN != null) updateFields.push(`maCN='${maCN}'`);
+        if (SDT != null) {
+            const queryIsPaid = `select * from khachhang where SDT='${SDT}'`;
+            const responseIspaid = await checkRPC(queryIsPaid, process.env.checkQueue || 'CHECK_QUEUE');
+            if (responseIspaid.hasUnpaidContract) {
+
+                return res.status(400).json({ isAdded: false, success: true, customer: responseIspaid.contracts, message: `Khách hàng đã có hợp đồng chưa thanh toán ở chi nhánh ${responseIspaid.branch} với số hợp đồng là ${responseIspaid.soHD}` });
+            };
+            updateFields.push(`SDT='${SDT}'`);
+        }
+
+
+        if (updateFields.length === 0) {
+            return res.status(400).json({ message: "Không có dữ liệu gì để cập nhật!" });
+        }
+
+        // Tự động nối mảng bằng dấu phẩy
+
+
+
+        const query = `UPDATE khachhang SET ${updateFields.join(', ')} WHERE maKH='${customerId}'`;
+
+        await send(query);
         return res.status(200).json({ success: true, message: "chỉnh sửa khách hàng thành công" });
     } catch (error) {
         console.error("Lỗi khi thêm khách hàng:", error);
         return res.status(500).json({ success: false, message: "Lỗi máy chủ khi chỉnh sửa khách hàng" });
     }
 
-}); router.delete('/customers/:id', verifyToken, async (req, res) => {
+}); router.delete('/customers/:id', verifyToken, authorization("R_ADMIN", "R_MANAGER"), async (req, res) => {
     try {
         const customerId = req.params.id;
-        const { maNV } = req.body;
-        const pool1 = await db.GetManh1DBPool();
-        const pool2 = await db.GetManh2DBPool();
-        const pool3 = await db.GetManh3DBPool();
-        const request1 = pool1.request();
-        const request2 = pool2.request();
-        const request3 = pool3.request();
-        request1.input('maKH', sql.VarChar, customerId);
-
-        request1.input('maNV', sql.VarChar, maNV);
-        request2.input('maKH', sql.VarChar, customerId);
-
-        request2.input('maNV', sql.VarChar, maNV);
-        request3.input('maKH', sql.VarChar, customerId);
-
-        request3.input('maNV', sql.VarChar, maNV);
-        const query = 'use DienLuc Delete khachhang  WHERE maKH=@maKH and maCN=(SELECT maCN FROM nhanvien WHERE maNV=@maNV)';
-        const result1 = await request1.query(query);
-        const result2 = await request2.query(query);
-        const result3 = await request3.query(query);
-        if (result1.rowsAffected[0] > 0)
-            tp1.delete("Xóa khách hàng " + customerId, { maKH: customerId });
-        if (result2.rowsAffected[0] > 0)
-            tp2.delete("Xóa khách hàng " + customerId, { maKH: customerId });
-        if (result3.rowsAffected[0] > 0)
-            tp3.delete("Xóa khách hàng " + customerId, { maKH: customerId });
+        const maCN = req.user.chinhanh;
+        if (maCN === "TongBo") {
+            const query = `Delete khachhang  WHERE maKH='${customerId}'`;
+            await send(query);
+        } else {
+            const query = `Delete khachhang  WHERE maKH='${customerId}' and maCN='${maCN}'`;
+            await send(query);
+        }
         return res.status(200).json({ isDeleted: true, success: true, message: "Xóa khách hàng thành công" });
     } catch (error) {
         console.error("Lỗi khi thêm khách hàng:", error);

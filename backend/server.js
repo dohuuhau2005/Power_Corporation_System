@@ -56,7 +56,7 @@ try {
 
     app.use('/admin', sitesRoute);
     app.use('/admin', staffsRoute);
-    //  app.use('/admin', require('./Admin/History'));
+    app.use('/admin', require('./src/Admin/History'));
 } catch (error) {
     console.warn("⚠️ Cảnh báo: Lỗi import route Admin.", error.message);
 }
@@ -64,19 +64,17 @@ try {
 // --- Staff Routes ---
 try {
     app.use('/employee', require('./src/Staff/Customers'));
-    // app.use('/employee', require('./Staff/Contract'));
-    // app.use('/employee', require('./Staff/bills'));
+    app.use('/employee', require('./src/Staff/Contract'));
+    app.use('/employee', require('./src/Staff/bills'));
     app.use('/employee', require("./src/Staff/AllInformation"));
 } catch (error) {
     console.warn("⚠️ Cảnh báo: Lỗi import route Staff.", error.message);
 }
 
 // // --- Question Route ---
-// try {
-//     app.use('/question', require('./Question/Question'));
-// } catch (error) {
-//     console.warn("⚠️ Cảnh báo: Lỗi import route Question.", error.message);
-// }
+
+app.use('/question', require('./src/Question/Question'));
+
 
 
 // ==================================================================

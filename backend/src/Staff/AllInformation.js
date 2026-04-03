@@ -14,10 +14,12 @@ router.get("/allInformation", verifyToken, authorization("R_ADMIN", "R_STAFF", "
         WHERE n.maCN = c.maCN 
         AND n.maNV = :maNV
     `;
+    let connect;
     try {
+
         const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
 
-        connect = await connectionFromJson.getConnectionFromJson(connectionJson);
+        connect = await connectionFromJson.getConnectionFromJson(connectionJson, req.user.chinhanh);
 
         const result = await connect.execute(
             query,

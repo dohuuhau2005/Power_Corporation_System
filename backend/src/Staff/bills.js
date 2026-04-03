@@ -1,79 +1,37 @@
 const express = require('express');
 const router = express.Router();
-
+const { ulid } = require('ulid');
 const oracledb = require('oracledb');
 const connectionFromJson = require('../config/OraclePoolFromJson')
 const { authorization } = require('../middleware/authorization');
 const { verifyToken } = require('../middleware/verifyToken');
 const DecryptAES = require('../config/DecryptAES');
+const send = require('../config/SeenQuery');
 router.post("/bills", verifyToken, authorization("R_ADMIN", "R_STAFF", "R_MANAGER"), async (req, res) => {
-    const { thanhpho, soHD, maNV, soTien } = req.body;
+    const { soHD, soTien } = req.body;
     try {
-        const queryUpdate = `use dienluc
-update hopdong set isPaid = 1 where soHD = @soHD `;
+        const month = new Date().getMonth() + 1;
+        const year = new Date().getFullYear();
+        const maNV = req.user.id;
+        const soHDN = ulid();
+        const queryUpdate = ` update hopdong set isPaid = 1 where soHD = '${soHD}' `;
         const query = `
 insert into hoadon (soHDN ,
     thang ,
     nam ,
     soHD ,
     maNV ,
-    soTien ) values (@soHDN,@thang,@nam,@soHD,@maNV,@soTien) `;
-        const month = new Date().getMonth() + 1;
-        const year = new Date().getFullYear();
-        const pool1 = await db.GetManh1DBPool();
-        const pool2 = await db.GetManh2DBPool();
-        const pool3 = await db.GetManh3DBPool();
-        const soHDN = ulid();
-        if (thanhpho === "TP1") {
-            const resultUpdate1 = await pool1.request()
-                .input("soHD", sql.VarChar, soHD).query(queryUpdate)
-            if (resultUpdate1.rowsAffected[0] > 0)
-                tp1.update("thêm hóa đơn cho hợp đồng " + soHD, { soHD: soHD })
-            const result1 = await pool1.request()
-                .input("soHD", sql.VarChar, soHD)
-                .input("soHDN", sql.VarChar, soHDN)
-                .input("maNV", sql.VarChar, maNV)
-                .input("thang", sql.Int, month)
-                .input("nam", sql.Int, year)
-                .input("soTien", sql.Int, soTien)
-                .query(query);
-            if (result1.rowsAffected[0] > 0)
-                tp1.insert("thêm hóa đơn " + soHDN, { soHD: soHD, soHDN: soHDN, maNV: maNV, thang: month, nam: year, soTien: soTien });
-        }
+    soTien ) values ('${soHDN}',${month},${year},'${soHD}','${maNV}',${soTien}) `;
 
-        if (thanhpho === "TP2") {
-            const resultUpdate2 = await pool2.request()
-                .input("soHD", sql.VarChar, soHD).query(queryUpdate)
-            if (resultUpdate2.rowsAffected[0] > 0)
-                tp2.update("thêm hóa đơn cho hợp đồng " + soHD, { soHD: soHD })
-            const result2 = await pool2.request()
-                .input("soHD", sql.VarChar, soHD)
-                .input("soHDN", sql.VarChar, soHDN)
-                .input("maNV", sql.VarChar, maNV)
-                .input("thang", sql.Int, month)
-                .input("nam", sql.Int, year)
-                .input("soTien", sql.Int, soTien)
-                .query(query);
-            if (result2.rowsAffected[0] > 0)
-                tp2.insert("thêm hóa đơn " + soHDN, { soHD: soHD, soHDN: soHDN, maNV: maNV, thang: month, nam: year, soTien: soTien });
 
-        }
-        if (thanhpho === "TP3") {
-            const resultUpdate3 = await pool3.request()
-                .input("soHD", sql.VarChar, soHD).query(queryUpdate)
-            if (resultUpdate3.rowsAffected[0] > 0)
-                tp3.update("thêm hóa đơn cho hợp đồng " + soHD, { soHD: soHD })
-            const result3 = await pool3.request()
-                .input("soHD", sql.VarChar, soHD)
-                .input("soHDN", sql.VarChar, soHDN)
-                .input("maNV", sql.VarChar, maNV)
-                .input("thang", sql.Int, month)
-                .input("nam", sql.Int, year)
-                .input("soTien", sql.Int, soTien)
-                .query(query);
-            if (result3.rowsAffected[0] > 0)
-                tp3.insert("thêm hóa đơn " + soHDN, { soHD: soHD, soHDN: soHDN, maNV: maNV, thang: month, nam: year, soTien: soTien });
-        }
+
+
+
+        await Promise.all([
+            send(queryUpdate),
+            send(query)
+        ])
+
         return res.status(200).json({ success: true, message: "them hoa don thanh cong" })
     } catch (error) {
         console.log("loi them hoa don ", error)
@@ -82,9 +40,9 @@ insert into hoadon (soHDN ,
 
 });
 
-router.get("/bills", verifyToken, async (req, res) => {
+router.get("/bills", verifyToken, authorization("R_ADMIN", "R_STAFF", "R_MANAGER"), async (req, res) => {
     // Lấy maNV từ query params được gửi từ client Java
-    const maNV = req.query.maNV;
+    const maNV = req.user.id;
 
     if (!maNV) {
         return res.status(400).json({ success: false, message: "Thiếu Mã Nhân Viên để truy vấn hóa đơn." });
@@ -92,24 +50,27 @@ router.get("/bills", verifyToken, async (req, res) => {
 
     // Query: Lấy tất cả các cột cần thiết cho bảng Hóa Đơn, lọc theo MaNV
     const query = `
-        USE DienLuc;
+    
         SELECT soHDN, thang, nam, soHD, maNV, soTien
         FROM hoadon
-        WHERE maNV = @maNV;
+        WHERE maNV = :maNV
     `;
-
+    let connect;
     try {
-        const pool1 = await db.GetManh1DBPool();
-        const pool2 = await db.GetManh2DBPool();
-        const pool3 = await db.GetManh3DBPool();
 
-        // Thực hiện truy vấn trên 3 mảnh dữ liệu
-        const result1 = await pool1.request().input("maNV", sql.VarChar, maNV).query(query);
-        const result2 = await pool2.request().input("maNV", sql.VarChar, maNV).query(query);
-        const result3 = await pool3.request().input("maNV", sql.VarChar, maNV).query(query);
+        const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
+
+        connect = await connectionFromJson.getConnectionFromJson(connectionJson, req.user.chinhanh);
+
+        const result = await connect.execute(
+            query,
+            { maNV: maNV },
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+
 
         // Kết hợp kết quả từ 3 mảnh
-        const allBills = [...result1.recordset, ...result2.recordset, ...result3.recordset];
+        const allBills = result.rows;
 
         // Trả về dữ liệu dưới key "bills" (key này sẽ được code Java Client trích xuất)
         return res.status(200).json({
@@ -124,6 +85,14 @@ router.get("/bills", verifyToken, async (req, res) => {
             success: false,
             message: "Lỗi máy chủ khi lấy danh sách hóa đơn: " + error.message
         });
+    } finally {
+        if (connect) {
+            try {
+                await connect.close();
+            } catch (err) {
+                console.error("Lỗi đóng connection:", err);
+            }
+        }
     }
 });
 module.exports = router;
