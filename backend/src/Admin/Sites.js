@@ -8,7 +8,7 @@ const { authorization } = require('../middleware/authorization');
 const send = require('../config/SeenQuery');
 const getBranchLogger = require('../config/logger');
 
-router.get('/sites', verifyToken, authorization("R_ADMIN"), async (req, res) => {
+router.get('/sites', verifyToken, authorization("R_ADMIN", "R_MANAGER"), async (req, res) => {
     let connect;
     try {
 
