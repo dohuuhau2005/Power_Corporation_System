@@ -9,6 +9,8 @@ const connectionFromJson = require('../config/OraclePoolFromJson');
 const checkRPC = require('../config/CheckRPC');
 const send = require('../config/SeenQuery');
 const { ulid } = require('ulid');
+const getBranchLogger = require('../config/logger');
+
 router.get('/customers', verifyToken, authorization("R_ADMIN", "R_STAFF", "R_MANAGER"), async (req, res) => {
     let connect;
     try {
@@ -42,6 +44,7 @@ router.get('/customers', verifyToken, authorization("R_ADMIN", "R_STAFF", "R_MAN
 //ứng dụng rabitMQ vào việc trao đổi dữ liệu giữa các service.
 router.post('/customers', verifyToken, authorization("R_ADMIN", "R_MANAGER", "R_STAFF"), async (req, res) => {
     try {
+        const branchLogger = getBranchLogger(req.user.chinhanh);
         //đã có ở chi nhánh khác chưa
         const { tenKH, SDT } = req.body;
         const maCN = req.user.chinhanh;
@@ -54,14 +57,15 @@ router.post('/customers', verifyToken, authorization("R_ADMIN", "R_MANAGER", "R_
             return res.status(400).json({ isAdded: false, success: true, contracts: responseIspaid.contracts, message: `Khách hàng đã có hợp đồng chưa thanh toán ở chi nhánh ${responseIspaid.branch} với số hợp đồng là ${responseIspaid.soHD}` });
         }
         const query = `INSERT INTO khachhang (maKH, tenKH, maCN, SDT) VALUES ('${maKH}', N'${tenKH}', '${maCN}', '${SDT}')`;
-        await send(query);
-
+        // await send(query);
+        await branchLogger.insert(`Thêm khách hàng thành công +${maKH}`, { MaNV: req.user.manv, maKH: maKH, tenKH: tenKH, maCN: maCN, SDT: SDT });
 
 
 
         return res.status(200).json({ isAdded: true, success: true, message: "Thêm khách hàng thành công" });
     } catch (error) {
         console.error("Lỗi khi thêm khách hàng:", error);
+        await branchLogger.error(`Lỗi khi thêm khách hàng +${maKH}`, { MaNV: req.user.manv, maKH: maKH, tenKH: tenKH, maCN: maCN, SDT: SDT, error });
         return res.status(500).json({ isAdded: false, success: false, message: "Lỗi máy chủ khi thêm khách hàng" });
     }
 
@@ -108,6 +112,7 @@ router.get('/customers/:id', verifyToken, authorization("R_ADMIN", "R_STAFF", "R
 
 router.put('/customers/:id', verifyToken, authorization("R_ADMIN", "R_MANAGER"), async (req, res) => {
     try {
+        const branchLogger = getBranchLogger(req.user.chinhanh);
         const customerId = req.params.id;
         const { tenKH, maCN, SDT } = req.body;
         let updateFields = []; // Dùng mảng để chứa
@@ -136,26 +141,32 @@ router.put('/customers/:id', verifyToken, authorization("R_ADMIN", "R_MANAGER"),
         const query = `UPDATE khachhang SET ${updateFields.join(', ')} WHERE maKH='${customerId}'`;
 
         await send(query);
+        await branchLogger.update(`Cập nhật khách hàng thành công +${customerId}`, { MaNV: req.user.manv, maKH: customerId, tenKH: tenKH || null, maCN: maCN || null, SDT: SDT || null });
         return res.status(200).json({ success: true, message: "chỉnh sửa khách hàng thành công" });
     } catch (error) {
         console.error("Lỗi khi thêm khách hàng:", error);
+        await branchLogger.error(`Lỗi khi cập nhật khách hàng +${customerId}`, { MaNV: req.user.manv, maKH: customerId, tenKH: tenKH || null, maCN: maCN || null, SDT: SDT || null, error });
         return res.status(500).json({ success: false, message: "Lỗi máy chủ khi chỉnh sửa khách hàng" });
     }
 
 }); router.delete('/customers/:id', verifyToken, authorization("R_ADMIN", "R_MANAGER"), async (req, res) => {
     try {
+        const branchLogger = getBranchLogger(req.user.chinhanh);
         const customerId = req.params.id;
         const maCN = req.user.chinhanh;
         if (maCN === "TongBo") {
             const query = `Delete khachhang  WHERE maKH='${customerId}'`;
-            await send(query);
+            //     await send(query);
+            await branchLogger.delete(`Xóa khách hàng thành công +${customerId}`, { MaNV: req.user.manv, maKH: customerId });
         } else {
             const query = `Delete khachhang  WHERE maKH='${customerId}' and maCN='${maCN}'`;
-            await send(query);
+            //     await send(query);
+            await branchLogger.delete(`Xóa khách hàng thành công +${customerId}`, { MaNV: req.user.manv, maKH: customerId, maCN: maCN });
         }
         return res.status(200).json({ isDeleted: true, success: true, message: "Xóa khách hàng thành công" });
     } catch (error) {
         console.error("Lỗi khi thêm khách hàng:", error);
+        await branchLogger.error(`Lỗi khi xóa khách hàng +${customerId}`, { MaNV: req.user.manv, maKH: customerId, maCN: maCN, error });
         return res.status(500).json({ isDeleted: false, success: false, message: "Lỗi máy chủ khi Xóa khách hàng" });
     }
 

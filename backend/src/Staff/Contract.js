@@ -7,7 +7,7 @@ const { authorization } = require('../middleware/authorization');
 const { verifyToken } = require('../middleware/verifyToken');
 const DecryptAES = require('../config/DecryptAES');
 const send = require('../config/SeenQuery');
-
+const getBranchLogger = require('../config/logger');
 
 router.get("/contracts", verifyToken, authorization("R_ADMIN", "R_STAFF", "R_MANAGER"), async (req, res) => {
     const manv = req.user.id;
@@ -59,6 +59,7 @@ router.get("/contracts", verifyToken, authorization("R_ADMIN", "R_STAFF", "R_MAN
 router.post("/contracts", verifyToken, authorization("R_ADMIN", "R_MANAGER", "R_STAFF"), async (req, res) => {
     const { maKH, soDienKe, kwDinhMuc, dongiaKW } = req.body;
     const soHD = ulid();
+    const branchLogger = getBranchLogger(req.user.chinhanh);
     try {
         const query = `
 
@@ -66,10 +67,12 @@ router.post("/contracts", verifyToken, authorization("R_ADMIN", "R_MANAGER", "R_
 `;
 
         await send(query);
+        await branchLogger.insert(`Thêm hợp đồng thành công +${soHD}`, { MaNV: req.user.manv, soHD: soHD, maKH, soDienKe, kwDinhMuc, dongiaKW });
         return res.status(200).json({ success: true, message: "Thêm hợp đồng thành công" });
 
     } catch (error) {
         console.log(error)
+        await branchLogger.error(`Lỗi khi thêm hợp đồng +${soHD}`, { MaNV: req.user.manv, soHD: soHD, maKH, soDienKe, kwDinhMuc, dongiaKW, error });
         return res.status(500).json({ success: false, message: "Thêm hợp đồng thất bại" });
     }
 
@@ -78,6 +81,7 @@ router.post("/contracts", verifyToken, authorization("R_ADMIN", "R_MANAGER", "R_
 router.put("/contracts/:id", verifyToken, authorization("R_ADMIN", "R_MANAGER"), async (req, res) => {
     const { maKH, soDienKe, kwDinhMuc, dongiaKW } = req.body;
     const soHD = req.params.id;
+    const branchLogger = getBranchLogger(req.user.chinhanh);
     try {
         let updateFields = []; // Dùng mảng để chứa
 
@@ -96,23 +100,28 @@ router.put("/contracts/:id", verifyToken, authorization("R_ADMIN", "R_MANAGER"),
 
 
         await send(query);
+        await branchLogger.update(`Cập nhật hợp đồng thành công +${soHD}`, { MaNV: req.user.manv, soHD: soHD, maKH, soDienKe, kwDinhMuc, dongiaKW });
         return res.status(200).json({ success: true, message: "Cập nhật hợp đồng thành công" });
     } catch (error) {
         console.log(error);
+        await branchLogger.error(`Lỗi khi cập nhật hợp đồng +${soHD}`, { MaNV: req.user.manv, soHD: soHD, maKH, soDienKe, kwDinhMuc, dongiaKW, error });
         return res.status(500).json({ success: false, message: "Cập nhật hợp đồng thất bại" });
     }
 });
 router.delete("/contracts/:id", verifyToken, authorization("R_ADMIN", "R_MANAGER"), async (req, res) => {
     const soHD = req.params.id;
+    const branchLogger = getBranchLogger(req.user.chinhanh);
     try {
         const query = `
             DELETE FROM hopdong
             WHERE soHD = ${soHD}
         `;
         await send(query);
+        await branchLogger.delete(`Xóa hợp đồng thành công +${soHD}`, { MaNV: req.user.manv, soHD: soHD });
         return res.status(200).json({ success: true, message: "Xóa hợp đồng thành công" });
     } catch (error) {
         console.log(error);
+        await branchLogger.error(`Lỗi khi xóa hợp đồng +${soHD}`, { MaNV: req.user.manv, soHD: soHD, error });
         return res.status(500).json({ success: false, message: "Xóa hợp đồng thất bại" });
     }
 });

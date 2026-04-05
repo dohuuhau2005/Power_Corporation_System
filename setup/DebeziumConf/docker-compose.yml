@@ -1,0 +1,16 @@
+
+services:
+  debezium-server:
+    image: quay.io/debezium/server:2.5
+    container_name: debezium-oracle-worker
+    ports:
+      - "8082:8080"
+    volumes:
+      # Map file cấu hình và driver
+      - ./application.properties:/debezium/conf/application.properties
+      - ./ojdbc8.jar:/debezium/lib/ojdbc8.jar
+      # Map thư mục data ra ngoài để không bị "mất trí nhớ"
+      - ./data:/debezium/data
+    environment:
+      - JAVA_OPTS=-Xmx1g
+    restart: unless-stopped
