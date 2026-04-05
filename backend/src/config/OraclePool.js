@@ -2,9 +2,9 @@ const oracledb = require('oracledb');
 
 // Cấu hình bản đồ các thành phố trỏ về đúng PDB
 const DB_CONFIG = {
-    'TP1': 'localhost:1521/TP1',
-    'TP2': 'localhost:1521/TP2',
-    'TongBo': 'localhost:1521/TongBo'
+    'TP1': 'localhost:1522/TP1',
+    'TP2': 'localhost:1522/TP2',
+    'TongBo': 'localhost:1522/TongBo'
 };
 
 // TẠO SỔ CÁI: Dùng Map để lưu vết những Pool nào đã được khởi tạo

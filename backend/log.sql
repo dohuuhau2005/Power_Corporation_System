@@ -21,7 +21,7 @@ alter session set current_schema =db_dienlucCN3 ;--NV_101
 select * from hopdong; 
 
 create database UsersCsdlPt;
-use UsersCsdlPt
+use UsersCsdlPt;
 --rieneg 1 db
 create table Users(
 	MaNV VARCHAR(20) Primary Key,
@@ -1077,7 +1077,6 @@ GRANT READ, WRITE ON DIRECTORY backup_dir TO sys;
 
 -- 3. Chui vào nhà Chi nhánh 2 (TP2) và cấp sổ đỏ
 ALTER SESSION SET CONTAINER = TP2;
-<<<<<<< HEAD
 CREATE OR REPLACE DIRECTORY backup_dir AS 'C:\OracleBackup';
 GRANT READ, WRITE ON DIRECTORY backup_dir TO sys;
 
@@ -1090,7 +1089,6 @@ join chinhanh on khachhang.maCN = chinhanh.maCN
 where hopdong.isPaid=0 and maKH=:maKH
 
 
-=======
 CREATE OR REPLACE DIRECTORY backup_dir AS 'C:\DoAnCSDLOracle\Power_Corporation_System\setup\oracleBackup';
 GRANT READ, WRITE ON DIRECTORY backup_dir TO sys;
 >>>>>>> acb34b0861da931ef17ab2e6f06e0e34a15fa270

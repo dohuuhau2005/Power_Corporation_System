@@ -10,9 +10,17 @@ const api = axios.create({
   }
 })
 
+// Token được gửi tự động qua cookie (withCredentials: true)
+// Không cần lấy từ localStorage
+
 // Auth endpoints
 export const login = async (credentials) => {
   const response = await api.post('/login', credentials)
+  return response.data
+}
+
+export const logout = async () => {
+  const response = await api.post('/login/logout')
   return response.data
 }
 
@@ -97,13 +105,61 @@ export const deleteCustomer = async (id) => {
   return response.data
 }
 
+// Contract endpoints
+export const getContracts = async () => {
+  const response = await api.get('/employee/contracts')
+  return response.data
+}
+
+export const getContractDetail = async (id) => {
+  const response = await api.get(`/employee/contracts/${id}`)
+  return response.data
+}
+
+export const createContract = async (data) => {
+  const response = await api.post('/employee/contracts', data)
+  return response.data
+}
+
+export const updateContract = async (id, data) => {
+  const response = await api.put(`/employee/contracts/${id}`, data)
+  return response.data
+}
+
+export const deleteContract = async (id) => {
+  const response = await api.delete(`/employee/contracts/${id}`)
+  return response.data
+}
+
+export const payContract = async (id, data) => {
+  const response = await api.put(`/employee/contracts/${id}/pay`, data)
+  return response.data
+}
+
 export const getBills = async (maNV) => {
   const response = await api.get('/employee/bills', { params: { maNV } })
   return response.data
 }
 
+export const getBillDetail = async (id) => {
+  const response = await api.get(`/employee/bills/${id}`)
+  return response.data
+}
+
 export const createBill = async (data) => {
   const response = await api.post('/employee/bills', data)
+  return response.data
+}
+
+// Staff detail endpoints
+export const getStaffDetail = async (id) => {
+  const response = await api.get(`/admin/staffs/${id}`)
+  return response.data
+}
+
+// Customer detail endpoints  
+export const getCustomerDetail = async (id) => {
+  const response = await api.get(`/employee/customers/${id}`)
   return response.data
 }
 

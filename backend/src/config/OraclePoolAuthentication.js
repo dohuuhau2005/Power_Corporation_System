@@ -16,7 +16,7 @@ async function getConnectionForRole(username, password) {
     if (!poolRegistry.has(poolAlias)) {
         console.log(`[DB] Đang khởi tạo Pool mới cho ${username} `);
 
-        const connectString = 'localhost:1521/TongBo';
+        const connectString = 'localhost:1522/TongBo';
         if (!connectString) throw new Error("Đăng nhập xác thực không thành công");
 
         // Tạo Pool mới

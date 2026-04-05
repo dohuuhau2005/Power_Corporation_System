@@ -18,7 +18,7 @@ router.get('/staffs', verifyToken, authorization("R_ADMIN"), async (req, res) =>
         const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
 
         connect = await connectionFromJson.getConnectionFromJson(connectionJson, req.user.chinhanh);
-        const query = `SELECT * FROM db_dienluc.nhanvien`;
+        const query = `SELECT * FROM nhanvien`;
         const result = await connect.execute(
             query,
             {},
@@ -51,7 +51,7 @@ router.post('/staffs', verifyToken, authorization("R_ADMIN"), async (req, res) =
         connect = await connectionFromJson.getConnectionFromJson(connectionJson, req.user.chinhanh);
         // --- PHẦN 1: KIỂM TRA TỒN TẠI (Tạo request riêng để check) ---
         // Chỉ input maNV vào đây để check
-        const checkQuery = `SELECT COUNT(maNV) AS SO_LUONG_NV FROM db_dienluc.nhanvien  WHERE maNV = :maNV_param `;
+        const checkQuery = `SELECT COUNT(maNV) AS SO_LUONG_NV FROM nhanvien  WHERE maNV = :maNV_param `;
 
         const result = await connect.execute(
             checkQuery,
@@ -103,6 +103,46 @@ router.delete('/staffs/:id', verifyToken, authorization("R_ADMIN"), async (req, 
         return res.status(500).json({ success: false, message: "Lỗi máy chủ khi xóa tài khoản nhân viên" });
     }
 });
+
+router.get('/staffs/:id', verifyToken, authorization("R_ADMIN", "R_MANAGER"), async (req, res) => {
+    let connect;
+    try {
+        const maNV = req.params.id;
+        const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
+        connect = await connectionFromJson.getConnectionFromJson(connectionJson, req.user.chinhanh);
+        
+        const query = `
+            SELECT nv.MANV, nv.HOTEN, nv.MACN, nv.ROLE, nv.STATUS, cn.TENCN, cn.THANHPHO
+            FROM nhanvien nv
+            LEFT JOIN chinhanh cn ON nv.MACN = cn.MACN
+            WHERE nv.MANV = :maNV
+        `;
+        
+        const result = await connect.execute(
+            query,
+            { maNV: maNV },
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, message: "Không tìm thấy nhân viên" });
+        }
+        
+        return res.status(200).json({ success: true, staff: result.rows[0] });
+    } catch (error) {
+        console.error("Lỗi khi lấy chi tiết nhân viên:", error);
+        return res.status(500).json({ success: false, message: "Lỗi máy chủ khi lấy chi tiết nhân viên" });
+    } finally {
+        if (connect) {
+            try {
+                await connect.close();
+            } catch (err) {
+                console.error("Lỗi đóng connection:", err);
+            }
+        }
+    }
+});
+
 router.put('/staffs/:id', verifyToken, authorization("R_ADMIN", "R_MANAGER"), async (req, res) => {
     try {
         const idUser = req.params.id;

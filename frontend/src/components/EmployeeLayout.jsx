@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
+import { logout as logoutApi } from '../services/api'
 import './EmployeeLayout.css'
 
 export default function EmployeeLayout({ children }) {
@@ -8,9 +9,15 @@ export default function EmployeeLayout({ children }) {
   const { user, logout } = useAuthStore()
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
+  const handleLogout = async () => {
+    try {
+      await logoutApi()
+    } catch (error) {
+      console.error('Lỗi logout:', error)
+    } finally {
+      logout()
+      navigate('/login')
+    }
   }
 
   return (
@@ -26,6 +33,7 @@ export default function EmployeeLayout({ children }) {
         <nav className="sidebar-nav">
           <a href="/employee" className="nav-item">📊 Tổng Quan</a>
           <a href="/employee/customers" className="nav-item">👥 Khách Hàng</a>
+          <a href="/employee/contracts" className="nav-item">📄 Hợp Đồng</a>
           <a href="/employee/bills" className="nav-item">📋 Hóa Đơn</a>
         </nav>
 
