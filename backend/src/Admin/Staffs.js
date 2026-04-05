@@ -12,6 +12,9 @@ const DecryptAES = require('../config/DecryptAES');
 const send = require('../config/SeenQuery');
 const EncryptAES = require('../config/EncryptAES');
 const connectionFromJson = require('../config/OraclePoolFromJson')
+const getBranchLogger = require('../config/logger');
+const branchLogger = getBranchLogger(req.user.chinhanh);
+
 router.get('/staffs', verifyToken, authorization("R_ADMIN"), async (req, res) => {
     let connect;
     try {
@@ -71,11 +74,12 @@ router.post('/staffs', verifyToken, authorization("R_ADMIN"), async (req, res) =
 
 
         await send(queryInsertNV);
-
+        await branchLogger.insert(`Thêm nhân viên thành công +${maNV}`, { MaNV: req.user.manv, NewNV: maNV, hoten, maCN: maCN, role: roleStaff });
         return res.status(200).json({ success: true, message: "Thêm nhân viên thành công" });
 
     } catch (error) {
         console.error("Lỗi khi thêm nhân viên:", error);
+        await branchLogger.error(`Lỗi khi thêm nhân viên +${maNV}`, { MaNV: req.user.manv, NewNV: maNV, hoten, maCN: maCN, role: roleStaff, error });
         return res.status(500).json({ isAdded: true, success: false, message: "Lỗi máy chủ khi thêm nhân viên" });
     } finally {
         if (connect) {
@@ -95,11 +99,12 @@ router.delete('/staffs/:id', verifyToken, authorization("R_ADMIN"), async (req, 
         const query = `update nhanvien set status=2 where maNV = '${idUser}'`;
 
         await send(query);
-
+        await branchLogger.update(`Khóa tài khoản nhân viên thành công +${idUser}`, { MaNV: req.user.manv, OldNV: idUser });
 
         return res.status(200).json({ success: true, message: "khóa tài khoản nhân viên thành công" });
     } catch (error) {
         console.error("Lỗi khi xóa tài khoản nhân viên:", error);
+        await branchLogger.error(`Lỗi khi khóa tài khoản nhân viên +${idUser}`, { MaNV: req.user.manv, OldNV: idUser, error });
         return res.status(500).json({ success: false, message: "Lỗi máy chủ khi xóa tài khoản nhân viên" });
     }
 });
@@ -124,10 +129,11 @@ router.put('/staffs/:id', verifyToken, authorization("R_ADMIN", "R_MANAGER"), as
 
 
         await send(query);
-
+        await branchLogger.update(`Cập nhật nhân viên thành công +${idUser}`, { MaNV: req.user.manv, OldNV: idUser, hoten: hoten || null, maCN: maCN || null, role: role || null, status: status || null });
         return res.status(200).json({ success: true, message: "Cập nhật nhân viên thành công" });
     } catch (error) {
         console.error("Lỗi khi xuất danh sách nhân viên:", error);
+        await branchLogger.error(`Lỗi khi cập nhật nhân viên +${idUser}`, { MaNV: req.user.manv, OldNV: idUser, hoten: hoten || null, maCN: maCN || null, role: role || null, status: status || null, error });
         return res.status(500).json({ success: false, message: "Lỗi máy chủ khi cập nhật nhân viên" });
     }
 });

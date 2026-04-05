@@ -66,10 +66,12 @@ router.post("/contracts", verifyToken, authorization("R_ADMIN", "R_MANAGER", "R_
 `;
 
         await send(query);
+        await branchLogger.insert(`Thêm hợp đồng thành công +${soHD}`, { MaNV: req.user.manv, soHD: soHD, maKH, soDienKe, kwDinhMuc, dongiaKW });
         return res.status(200).json({ success: true, message: "Thêm hợp đồng thành công" });
 
     } catch (error) {
         console.log(error)
+        await branchLogger.error(`Lỗi khi thêm hợp đồng +${soHD}`, { MaNV: req.user.manv, soHD: soHD, maKH, soDienKe, kwDinhMuc, dongiaKW, error });
         return res.status(500).json({ success: false, message: "Thêm hợp đồng thất bại" });
     }
 
@@ -96,9 +98,11 @@ router.put("/contracts/:id", verifyToken, authorization("R_ADMIN", "R_MANAGER"),
 
 
         await send(query);
+        await branchLogger.update(`Cập nhật hợp đồng thành công +${soHD}`, { MaNV: req.user.manv, soHD: soHD, maKH, soDienKe, kwDinhMuc, dongiaKW });
         return res.status(200).json({ success: true, message: "Cập nhật hợp đồng thành công" });
     } catch (error) {
         console.log(error);
+        await branchLogger.error(`Lỗi khi cập nhật hợp đồng +${soHD}`, { MaNV: req.user.manv, soHD: soHD, maKH, soDienKe, kwDinhMuc, dongiaKW, error });
         return res.status(500).json({ success: false, message: "Cập nhật hợp đồng thất bại" });
     }
 });
@@ -110,9 +114,11 @@ router.delete("/contracts/:id", verifyToken, authorization("R_ADMIN", "R_MANAGER
             WHERE soHD = ${soHD}
         `;
         await send(query);
+        await branchLogger.delete(`Xóa hợp đồng thành công +${soHD}`, { MaNV: req.user.manv, soHD: soHD });
         return res.status(200).json({ success: true, message: "Xóa hợp đồng thành công" });
     } catch (error) {
         console.log(error);
+        await branchLogger.error(`Lỗi khi xóa hợp đồng +${soHD}`, { MaNV: req.user.manv, soHD: soHD, error });
         return res.status(500).json({ success: false, message: "Xóa hợp đồng thất bại" });
     }
 });

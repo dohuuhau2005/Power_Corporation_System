@@ -7,6 +7,8 @@ const { authorization } = require('../middleware/authorization');
 const { verifyToken } = require('../middleware/verifyToken');
 const DecryptAES = require('../config/DecryptAES');
 const send = require('../config/SeenQuery');
+const getBranchLogger = require('../config/logger');
+const branchLogger = getBranchLogger(req.user.chinhanh);
 router.post("/bills", verifyToken, authorization("R_ADMIN", "R_STAFF", "R_MANAGER"), async (req, res) => {
     const { soHD, soTien } = req.body;
     try {
@@ -31,10 +33,11 @@ insert into hoadon (soHDN ,
             send(queryUpdate),
             send(query)
         ])
-
+        await branchLogger.insert(`Thêm hóa đơn thành công +${soHDN}`, { MaNV: req.user.manv, soHDN: soHDN, thang: month, nam: year, soHD: soHD, soTien: soTien });
         return res.status(200).json({ success: true, message: "them hoa don thanh cong" })
     } catch (error) {
         console.log("loi them hoa don ", error)
+        await branchLogger.error(`Lỗi khi thêm hóa đơn +${soHDN}`, { MaNV: req.user.manv, soHDN: soHDN, thang: month, nam: year, soHD: soHD, soTien: soTien, error });
         return res.status(500).json({ success: false, message: "thêm hóa đơn thất bại" })
     }
 

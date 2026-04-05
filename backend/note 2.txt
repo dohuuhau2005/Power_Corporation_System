@@ -84,3 +84,78 @@ if (isAuthentic) {
 } else {
     console.log("❌ Mộc giả! Sút vào sọt rác!");
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Đúng rồi sếp, khi chạy cơ chế LogMiner, thằng Debezium nó sẽ tự đẻ ra một cái bảng gọi là Flush Table để nó ghi dấu (checkpoint) quá trình đọc log. Nếu sếp chạy đi chạy lại nhiều lần hoặc cấu hình sai, cái bảng này hoặc các vết tích của nó có thể làm rác Database.
+
+Để dọn sạch "bãi chiến trường" mà thằng Debezium để lại trong Oracle, sếp làm theo các bước sau nhé:
+
+1. Tìm và diệt cái bảng "Flush Table"
+Thằng Debezium thường tạo một cái bảng tên là LOGMNR_FLUSH_TABLE (hoặc tên tương tự) nằm trong schema của cái user sếp cấp cho nó (thường là c##dbzuser).
+
+Sếp kết nối vào SQL Developer (bằng tài khoản sys as sysdba) và chạy lệnh này:
+
+SQL
+-- 1. Kiểm tra xem thằng c##dbzuser đang nắm những bảng nào
+SELECT owner, table_name FROM all_tables WHERE owner = 'C##DBZUSER';
+
+-- 2. Xóa sạch cái bảng flush table của nó (thay tên bảng nếu sếp thấy tên khác ở lệnh trên)
+DROP TABLE c##dbzuser.LOGMNR_FLUSH_TABLE;
+2. Phương án "Càn quét" (Nuclear Option) - Khuyên dùng
+Vì sếp đã quyết định bỏ Debezium và backend sẽ bắn trực tiếp lên RabbitMQ, cách nhanh nhất và sạch nhất là xóa luôn thằng User c##dbzuser. Khi xóa user này với từ khóa CASCADE, Oracle sẽ tự động quét sạch tất cả những gì thuộc về nó (bảng, index, quyền hạn...).
+
+Sếp chạy lệnh này ở CDB$ROOT:
+
+SQL
+-- Đứng ở sảnh chính
+ALTER SESSION SET CONTAINER = CDB$ROOT;
+
+-- Trảm luôn thằng user và mọi thứ nó tạo ra
+DROP USER c##dbzuser CASCADE;
+
+-- Lưu lại
+COMMIT;
+3. Giải phóng dung lượng ổ cứng (RẤT QUAN TRỌNG)
+Oracle có một cái dở là khi sếp DROP TABLE, nó không xóa hẳn mà tống vào "Thùng rác" (Recycle Bin). Dung lượng máy sếp vẫn sẽ bị chiếm dụng cho đến khi sếp đổ rác.
+
+Sếp gõ lệnh này để lấy lại dung lượng ngay lập tức:
+
+SQL
+-- Xóa sạch thùng rác của toàn bộ Database
+PURGE TABLESPACE users; -- Nếu sếp lưu ở tablespace khác thì đổi tên nhé
+-- Hoặc lệnh tổng lực:
+PURGE DBA_RECYCLEBIN;
+4. Kiểm tra file Log (Thủ phạm gây hết dung lượng ngầm)
+Nếu sếp thấy dung lượng máy vẫn chưa nhúc nhích, có thể do Oracle đã sinh ra quá nhiều Archive Logs hoặc Redo Logs trong lúc Debezium quét.
+
+Cách xử lý "tay ngang" (Dành cho đồ án): Nếu sếp dùng Docker cho Oracle, sếp có thể restart container Oracle.
+
+Cách xử lý chuyên nghiệp (Nếu sếp rành SQL):
+Sếp kiểm tra xem mode log có đang bật không: SELECT log_mode FROM v$database;. Nếu là ARCHIVELOG, sếp có thể tạm thời chuyển về NOARCHIVELOG để nó ngừng đẻ file log chiếm ổ cứng (vì giờ mình không xài Debezium nữa nên không cần hóng log nữa).
+
+SQL
+-- Chuyển về chế độ không lưu log (chỉ làm khi không dùng CDC nữa)
+SHUTDOWN IMMEDIATE;
+STARTUP MOUNT;
+ALTER DATABASE NOARCHIVELOG;
+ALTER DATABASE OPEN;
+Kết quả: Sau khi chạy xong bước 2 và 3, thằng Debezium sẽ biến mất hoàn toàn khỏi hệ thống của sếp, trả lại sự trong sạch và dung lượng cho ổ cứng. Giờ sếp cứ tập trung vào con Backend để nó bắn data trực tiếp là "về đích" an toàn! 🚀💯

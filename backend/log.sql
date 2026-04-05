@@ -36,7 +36,7 @@ create table Users(
 create table lichSuChuyenCongTac(
 id INT IDENTITY PRIMARY KEY,
 	MaNV VARCHAR(20) ,
-	MaKH VARCHAR(20),
+	MaKH VARCHAR(26),
 	NgayChuyen datetime default GETDATE(),
 	maCNCu VARCHAR(20),
 	maCNMoi VARCHAR(20)
@@ -1094,3 +1094,6 @@ where hopdong.isPaid=0 and maKH=:maKH
 CREATE OR REPLACE DIRECTORY backup_dir AS 'C:\DoAnCSDLOracle\Power_Corporation_System\setup\oracleBackup';
 GRANT READ, WRITE ON DIRECTORY backup_dir TO sys;
 >>>>>>> acb34b0861da931ef17ab2e6f06e0e34a15fa270
+
+alter table lichSuChuyenCongTac
+alter column maKH varchar2(26)

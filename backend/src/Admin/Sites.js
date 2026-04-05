@@ -6,6 +6,8 @@ const DecryptAES = require('../config/DecryptAES');
 const { verifyToken } = require('../middleware/verifyToken');
 const { authorization } = require('../middleware/authorization');
 const send = require('../config/SeenQuery');
+const getBranchLogger = require('../config/logger');
+const branchLogger = getBranchLogger(req.user.chinhanh);
 router.get('/sites', verifyToken, authorization("R_ADMIN"), async (req, res) => {
     let connect;
     try {
@@ -42,10 +44,12 @@ router.put('/sites/:id', verifyToken, authorization("R_ADMIN", "R_MANAGER"), asy
         const siteName = req.body.tenCN;
         const query = `update chinhanh set tenCN = N'${siteName}' where maCN = '${req.params.id}'`;
         await send(query);
+        await branchLogger.update(`Cập nhật chi nhánh thành công +${req.params.id}`, { MaNV: req.user.manv, tenCN: siteName, maCN: req.params.id });
         return res.status(200).json({ success: true, message: "Cập nhật chi nhánh thành công" });
 
     } catch (error) {
         console.error("Lỗi khi đổi tên chi nhánh:", error);
+        await branchLogger.error(`Lỗi khi đổi tên chi nhánh +${req.params.id}`, { MaNV: req.user.manv, tenCN: siteName, maCN: req.params.id, error });
         return res.status(500).json({ success: false, message: "Lỗi máy chủ khi đổi tên chi nhánh" });
     }
 });
