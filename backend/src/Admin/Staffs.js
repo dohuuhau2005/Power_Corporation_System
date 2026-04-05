@@ -13,7 +13,7 @@ const send = require('../config/SeenQuery');
 const EncryptAES = require('../config/EncryptAES');
 const connectionFromJson = require('../config/OraclePoolFromJson')
 const getBranchLogger = require('../config/logger');
-const branchLogger = getBranchLogger(req.user.chinhanh);
+
 
 router.get('/staffs', verifyToken, authorization("R_ADMIN"), async (req, res) => {
     let connect;
@@ -46,6 +46,7 @@ router.get('/staffs', verifyToken, authorization("R_ADMIN"), async (req, res) =>
 router.post('/staffs', verifyToken, authorization("R_ADMIN"), async (req, res) => {
     let connect;
     try {
+        const branchLogger = getBranchLogger(req.user.chinhanh);
         const { maNV, hoten, maCN, role } = req.body;
         const roleRequest = req.user.role;
         const roleStaff = role;
@@ -94,6 +95,7 @@ router.post('/staffs', verifyToken, authorization("R_ADMIN"), async (req, res) =
 //block thôi 
 router.delete('/staffs/:id', verifyToken, authorization("R_ADMIN"), async (req, res) => {
     try {
+        const branchLogger = getBranchLogger(req.user.chinhanh);
         const idUser = req.params.id;
 
         const query = `update nhanvien set status=2 where maNV = '${idUser}'`;
@@ -110,6 +112,7 @@ router.delete('/staffs/:id', verifyToken, authorization("R_ADMIN"), async (req, 
 });
 router.put('/staffs/:id', verifyToken, authorization("R_ADMIN", "R_MANAGER"), async (req, res) => {
     try {
+        const branchLogger = getBranchLogger(req.user.chinhanh);
         const idUser = req.params.id;
         const { hoten, maCN, role, status } = req.body;
 

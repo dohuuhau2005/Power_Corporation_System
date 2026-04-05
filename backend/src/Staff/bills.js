@@ -8,10 +8,11 @@ const { verifyToken } = require('../middleware/verifyToken');
 const DecryptAES = require('../config/DecryptAES');
 const send = require('../config/SeenQuery');
 const getBranchLogger = require('../config/logger');
-const branchLogger = getBranchLogger(req.user.chinhanh);
+
 router.post("/bills", verifyToken, authorization("R_ADMIN", "R_STAFF", "R_MANAGER"), async (req, res) => {
     const { soHD, soTien } = req.body;
     try {
+        const branchLogger = getBranchLogger(req.user.chinhanh);
         const month = new Date().getMonth() + 1;
         const year = new Date().getFullYear();
         const maNV = req.user.id;

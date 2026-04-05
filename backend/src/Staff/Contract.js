@@ -7,7 +7,7 @@ const { authorization } = require('../middleware/authorization');
 const { verifyToken } = require('../middleware/verifyToken');
 const DecryptAES = require('../config/DecryptAES');
 const send = require('../config/SeenQuery');
-
+const getBranchLogger = require('../config/logger');
 
 router.get("/contracts", verifyToken, authorization("R_ADMIN", "R_STAFF", "R_MANAGER"), async (req, res) => {
     const manv = req.user.id;
@@ -59,6 +59,7 @@ router.get("/contracts", verifyToken, authorization("R_ADMIN", "R_STAFF", "R_MAN
 router.post("/contracts", verifyToken, authorization("R_ADMIN", "R_MANAGER", "R_STAFF"), async (req, res) => {
     const { maKH, soDienKe, kwDinhMuc, dongiaKW } = req.body;
     const soHD = ulid();
+    const branchLogger = getBranchLogger(req.user.chinhanh);
     try {
         const query = `
 
@@ -80,6 +81,7 @@ router.post("/contracts", verifyToken, authorization("R_ADMIN", "R_MANAGER", "R_
 router.put("/contracts/:id", verifyToken, authorization("R_ADMIN", "R_MANAGER"), async (req, res) => {
     const { maKH, soDienKe, kwDinhMuc, dongiaKW } = req.body;
     const soHD = req.params.id;
+    const branchLogger = getBranchLogger(req.user.chinhanh);
     try {
         let updateFields = []; // Dùng mảng để chứa
 
@@ -108,6 +110,7 @@ router.put("/contracts/:id", verifyToken, authorization("R_ADMIN", "R_MANAGER"),
 });
 router.delete("/contracts/:id", verifyToken, authorization("R_ADMIN", "R_MANAGER"), async (req, res) => {
     const soHD = req.params.id;
+    const branchLogger = getBranchLogger(req.user.chinhanh);
     try {
         const query = `
             DELETE FROM hopdong
