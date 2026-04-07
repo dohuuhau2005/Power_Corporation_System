@@ -436,7 +436,6 @@ CREATE TABLE nhanvien (
     maCN VARCHAR2(20),
     role varchar2(20),
     status NUMBER(1) DEFAULT 0,
-    islocked NUMBER(1) DEFAULT 0,
     FOREIGN KEY (maCN) REFERENCES chinhanh(maCN)
 ) ;
 
