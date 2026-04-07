@@ -28,7 +28,8 @@ export default function BillsOverRange() {
         try {
             setLoading(true)
             const response = await getOverRangeBills()
-            setBills(response.bills || [])
+            setBills(response.hoatong || [])
+            console.log('✅ Hóa đơn quá hạn mức loaded:', response.hoatong?.length || 0)
         } catch (err) {
             setError('Không thể tải dữ liệu hóa đơn')
             console.error(err)

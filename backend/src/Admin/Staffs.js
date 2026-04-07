@@ -152,8 +152,9 @@ router.get('/staffs/:id', verifyToken, authorization("R_ADMIN", "R_MANAGER"), as
 });
 
 router.put('/staffs/:id', verifyToken, authorization("R_ADMIN", "R_MANAGER"), async (req, res) => {
+    const branchLogger = getBranchLogger(req.user.chinhanh);
     try {
-        const branchLogger = getBranchLogger(req.user.chinhanh);
+
         const idUser = req.params.id;
         const { hoten, maCN, role, status } = req.body;
 

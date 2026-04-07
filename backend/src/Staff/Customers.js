@@ -57,7 +57,7 @@ router.post('/customers', verifyToken, authorization("R_ADMIN", "R_MANAGER", "R_
             return res.status(400).json({ isAdded: false, success: true, contracts: responseIspaid.contracts, message: `Khách hàng đã có hợp đồng chưa thanh toán ở chi nhánh ${responseIspaid.branch} với số hợp đồng là ${responseIspaid.soHD}` });
         }
         const query = `INSERT INTO khachhang (maKH, tenKH, maCN, SDT) VALUES ('${maKH}', N'${tenKH}', '${maCN}', '${SDT}')`;
-        // await send(query);
+        await send(query);
         await branchLogger.insert(`Thêm khách hàng thành công +${maKH}`, { MaNV: req.user.manv, maKH: maKH, tenKH: tenKH, maCN: maCN, SDT: SDT });
 
 
@@ -77,24 +77,24 @@ router.get('/customers/:id', verifyToken, authorization("R_ADMIN", "R_STAFF", "R
         const maKH = req.params.id;
         const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
         connect = await connectionFromJson.getConnectionFromJson(connectionJson, req.user.chinhanh);
-        
+
         const query = `
             SELECT kh.MAKH, kh.TENKH, kh.MACN, kh.SDT, cn.TENCN, cn.THANHPHO
             FROM khachhang kh
             LEFT JOIN chinhanh cn ON kh.MACN = cn.MACN
             WHERE kh.MAKH = :maKH
         `;
-        
+
         const result = await connect.execute(
             query,
             { maKH: maKH },
             { outFormat: oracledb.OUT_FORMAT_OBJECT }
         );
-        
+
         if (result.rows.length === 0) {
             return res.status(404).json({ success: false, message: "Không tìm thấy khách hàng" });
         }
-        
+
         return res.status(200).json({ success: true, customer: result.rows[0] });
     } catch (error) {
         console.error("Lỗi khi lấy chi tiết khách hàng:", error);
@@ -156,11 +156,11 @@ router.put('/customers/:id', verifyToken, authorization("R_ADMIN", "R_MANAGER"),
         const maCN = req.user.chinhanh;
         if (maCN === "TongBo") {
             const query = `Delete khachhang  WHERE maKH='${customerId}'`;
-            //     await send(query);
+            await send(query);
             await branchLogger.delete(`Xóa khách hàng thành công +${customerId}`, { MaNV: req.user.manv, maKH: customerId });
         } else {
             const query = `Delete khachhang  WHERE maKH='${customerId}' and maCN='${maCN}'`;
-            //     await send(query);
+            await send(query);
             await branchLogger.delete(`Xóa khách hàng thành công +${customerId}`, { MaNV: req.user.manv, maKH: customerId, maCN: maCN });
         }
         return res.status(200).json({ isDeleted: true, success: true, message: "Xóa khách hàng thành công" });

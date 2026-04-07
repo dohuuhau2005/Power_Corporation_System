@@ -39,8 +39,9 @@ SELECT
     hopdong.kwDinhMuc,
     (hoadon.soTien / hopdong.donGiaKW) AS kwSuDung
 FROM hoadon
-JOIN hopdong ON hopdong.soHD = hoadon.soHD
-WHERE (hoadon.soTien / hopdong.donGiaKW) > hopdong.kwDinhMuc
+JOIN hopdong ON TRIM(hopdong.soHD) = TRIM(hoadon.soHD)
+WHERE hopdong.donGiaKW > 0 
+  AND (hoadon.soTien / hopdong.donGiaKW) > hopdong.kwDinhMuc
   `;
     let connect;
     try {

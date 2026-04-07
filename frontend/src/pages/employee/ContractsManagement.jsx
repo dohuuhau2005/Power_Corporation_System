@@ -23,9 +23,15 @@ export default function ContractsManagement() {
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [showDetail, setShowDetail] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
   const [selectedContract, setSelectedContract] = useState(null)
   const [formData, setFormData] = useState({
     maKH: '',
+    soDienKe: '',
+    kwDinhMuc: '',
+    dongiaKW: ''
+  })
+  const [editData, setEditData] = useState({
     soDienKe: '',
     kwDinhMuc: '',
     dongiaKW: ''
@@ -40,7 +46,8 @@ export default function ContractsManagement() {
       setLoading(true)
       const [contractsRes, customersRes] = await Promise.all([
         getContracts(),
-        getCustomers()
+        getCustomers(),
+
       ])
       setContracts(contractsRes.contracts || [])
       setCustomers(customersRes.customers || [])
@@ -88,15 +95,55 @@ export default function ContractsManagement() {
     try {
       const response = await getContractDetail(contract.SOHD)
       setSelectedContract(response.contract)
+      setEditData({
+        soDienKe: response.contract.SODIENKE || '',
+        kwDinhMuc: response.contract.KWDINHMUC || '',
+        dongiaKW: response.contract.DONGIAKW || ''
+      })
       setShowDetail(true)
     } catch (err) {
       setError('Không thể tải chi tiết: ' + err.message)
     }
   }
 
+  const handleEdit = (contract) => {
+    setEditData({
+      soDienKe: contract.SODIENKE || '',
+      kwDinhMuc: contract.KWDINHMUC || '',
+      dongiaKW: contract.DONGIAKW || ''
+    })
+    setIsEditing(true)
+  }
+
+  const handleSaveEdit = async () => {
+    try {
+      if (!selectedContract) return
+
+      const updateData = {}
+      if (editData.soDienKe && editData.soDienKe !== selectedContract.SODIENKE) {
+        updateData.soDienKe = editData.soDienKe
+      }
+      if (editData.kwDinhMuc && editData.kwDinhMuc !== selectedContract.KWDINHMUC) {
+        updateData.kwDinhMuc = editData.kwDinhMuc
+      }
+      if (editData.dongiaKW && editData.dongiaKW !== selectedContract.DONGIAKW) {
+        updateData.dongiaKW = editData.dongiaKW
+      }
+
+      await updateContract(selectedContract.SOHD, updateData)
+      setIsEditing(false)
+      fetchData()
+      setShowDetail(false)
+      setSelectedContract(null)
+      alert('Cập nhật hợp đồng thành công!')
+    } catch (err) {
+      setError('Không thể cập nhật hợp đồng: ' + (err.response?.data?.message || err.message))
+    }
+  }
+
   const handlePayContract = async () => {
     if (!selectedContract) return
-    
+
     const soTien = prompt('Nhập số tiền thanh toán:')
     if (!soTien || isNaN(soTien)) {
       setError('Số tiền không hợp lệ')
@@ -216,7 +263,7 @@ export default function ContractsManagement() {
         </div>
       )}
 
-      {showDetail && selectedContract && (
+      {showDetail && selectedContract && !isEditing && (
         <div className="detail-modal">
           <div className="modal-content">
             <div className="modal-header">
@@ -269,8 +316,75 @@ export default function ContractsManagement() {
                   💳 Thanh Toán Hợp Đồng
                 </button>
               )}
+              {canEdit && (
+                <button onClick={() => handleEdit(selectedContract)} className="btn-edit">
+                  ✎ Chỉnh Sửa
+                </button>
+              )}
               <button onClick={() => { setShowDetail(false); setSelectedContract(null) }} className="btn-close">
                 Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isEditing && selectedContract && (
+        <div className="detail-modal">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>✎ Chỉnh Sửa Hợp Đồng</h3>
+              <button className="close-btn" onClick={() => setIsEditing(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Số Hợp Đồng (Không thể sửa)</label>
+                  <input
+                    type="text"
+                    value={selectedContract.SOHD}
+                    disabled
+                  />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Số Điện Kế</label>
+                  <input
+                    type="text"
+                    value={editData.soDienKe}
+                    onChange={(e) => setEditData({ ...editData, soDienKe: e.target.value })}
+                    placeholder="Nhập số điện kế"
+                  />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Định Mức KW</label>
+                  <input
+                    type="number"
+                    value={editData.kwDinhMuc}
+                    onChange={(e) => setEditData({ ...editData, kwDinhMuc: e.target.value })}
+                    placeholder="Nhập định mức KW"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Đơn Giá KW</label>
+                  <input
+                    type="number"
+                    value={editData.dongiaKW}
+                    onChange={(e) => setEditData({ ...editData, dongiaKW: e.target.value })}
+                    placeholder="Nhập đơn giá KW"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button onClick={() => { setIsEditing(false); setEditData({ soDienKe: '', kwDinhMuc: '', dongiaKW: '' }) }} className="btn-cancel">
+                Hủy
+              </button>
+              <button onClick={handleSaveEdit} className="btn-save">
+                Lưu Thay Đổi
               </button>
             </div>
           </div>

@@ -79,13 +79,13 @@ router.post("/contracts", verifyToken, authorization("R_ADMIN", "R_MANAGER", "R_
 
 });
 router.put("/contracts/:id", verifyToken, authorization("R_ADMIN", "R_MANAGER"), async (req, res) => {
-    const { maKH, soDienKe, kwDinhMuc, dongiaKW } = req.body;
+    const { soDienKe, kwDinhMuc, dongiaKW } = req.body;
     const soHD = req.params.id;
     const branchLogger = getBranchLogger(req.user.chinhanh);
     try {
         let updateFields = []; // Dùng mảng để chứa
 
-        if (maKH != null) updateFields.push(`maKH='${maKH}'`);
+        // if (maKH != null) updateFields.push(`maKH='${maKH}'`);
         if (soDienKe != null) updateFields.push(`soDienKe=${soDienKe}`);
         if (kwDinhMuc != null) updateFields.push(`kwDinhMuc=${kwDinhMuc}`);
         if (dongiaKW != null) updateFields.push(`dongiaKW=${dongiaKW}`);
@@ -100,11 +100,11 @@ router.put("/contracts/:id", verifyToken, authorization("R_ADMIN", "R_MANAGER"),
 
 
         await send(query);
-        await branchLogger.update(`Cập nhật hợp đồng thành công +${soHD}`, { MaNV: req.user.manv, soHD: soHD, maKH, soDienKe, kwDinhMuc, dongiaKW });
+        await branchLogger.update(`Cập nhật hợp đồng thành công +${soHD}`, { MaNV: req.user.manv, soHD: soHD, soDienKe, kwDinhMuc, dongiaKW });
         return res.status(200).json({ success: true, message: "Cập nhật hợp đồng thành công" });
     } catch (error) {
         console.log(error);
-        await branchLogger.error(`Lỗi khi cập nhật hợp đồng +${soHD}`, { MaNV: req.user.manv, soHD: soHD, maKH, soDienKe, kwDinhMuc, dongiaKW, error });
+        await branchLogger.error(`Lỗi khi cập nhật hợp đồng +${soHD}`, { MaNV: req.user.manv, soHD: soHD, soDienKe, kwDinhMuc, dongiaKW, error });
         return res.status(500).json({ success: false, message: "Cập nhật hợp đồng thất bại" });
     }
 });
@@ -146,20 +146,20 @@ router.get("/contracts/:id", verifyToken, authorization("R_ADMIN", "R_STAFF", "R
             LEFT JOIN chinhanh cn ON kh.MACN = cn.MACN
             WHERE hd.SOHD = :soHD
         `;
-        
+
         const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
         connect = await connectionFromJson.getConnectionFromJson(connectionJson, req.user.chinhanh);
-        
+
         const result = await connect.execute(
             query,
             { soHD: soHD },
             { outFormat: oracledb.OUT_FORMAT_OBJECT }
         );
-        
+
         if (result.rows.length === 0) {
             return res.status(404).json({ success: false, message: "Không tìm thấy hợp đồng" });
         }
-        
+
         return res.status(200).json({ success: true, contract: result.rows[0] });
     } catch (error) {
         console.log(error);
@@ -179,24 +179,24 @@ router.put("/contracts/:id/pay", verifyToken, authorization("R_ADMIN", "R_MANAGE
     const soHD = req.params.id;
     const { soTien } = req.body;
     const { ulid } = require('ulid');
-    
+
     try {
         const month = new Date().getMonth() + 1;
         const year = new Date().getFullYear();
         const maNV = req.user.id;
         const soHDN = ulid();
-        
+
         const queryUpdate = `UPDATE hopdong SET isPaid = 1 WHERE soHD = '${soHD}'`;
         const queryInsertBill = `
             INSERT INTO hoadon (soHDN, thang, nam, soHD, maNV, soTien)
             VALUES ('${soHDN}', ${month}, ${year}, '${soHD}', '${maNV}', ${soTien})
         `;
-        
+
         await Promise.all([
             send(queryUpdate),
             send(queryInsertBill)
         ]);
-        
+
         return res.status(200).json({ success: true, message: "Thanh toán hợp đồng và tạo hóa đơn thành công" });
     } catch (error) {
         console.log("Lỗi thanh toán hợp đồng:", error);

@@ -9,7 +9,7 @@ export default function CustomersManagement() {
   const { user } = useAuthStore()
   const canAdd = user?.role === 'R_STAFF' || user?.role === 'R_MANAGER' || user?.role === 'R_ADMIN'
   const canEdit = user?.role === 'R_MANAGER' || user?.role === 'R_ADMIN'
-  
+
   const [customers, setCustomers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -34,6 +34,7 @@ export default function CustomersManagement() {
       setLoading(true)
       const response = await getCustomers()
       setCustomers(response.customers || [])
+      console.log('✅ Customers loaded:', response.customers?.length || 0)
     } catch (err) {
       setError('Không thể tải dữ liệu khách hàng')
       console.error(err)
@@ -145,15 +146,7 @@ export default function CustomersManagement() {
         <div className="form-box">
           <h3>Thêm Khách Hàng Mới</h3>
           <div className="form-row">
-            <div className="form-group">
-              <label>Mã Khách Hàng</label>
-              <input
-                type="text"
-                value={formData.maKH}
-                onChange={(e) => setFormData({ ...formData, maKH: e.target.value })}
-                placeholder="Nhập mã khách hàng"
-              />
-            </div>
+
             <div className="form-group">
               <label>Tên Khách Hàng</label>
               <input
