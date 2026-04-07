@@ -125,6 +125,85 @@ router.delete("/contracts/:id", verifyToken, authorization("R_ADMIN", "R_MANAGER
         return res.status(500).json({ success: false, message: "Xóa hợp đồng thất bại" });
     }
 });
+
+router.get("/contracts/:id", verifyToken, authorization("R_ADMIN", "R_STAFF", "R_MANAGER"), async (req, res) => {
+    const soHD = req.params.id;
+    let connect;
+    try {
+        const query = `
+            SELECT hd.SOHD,
+                   hd.MAKH,
+                   kh.TENKH,
+                   hd.NGAYKY,
+                   hd.SODIENKE,
+                   hd.KWDINHMUC,
+                   hd.DONGIAKW,
+                   hd.ISPAID,
+                   cn.TENCN,
+                   cn.THANHPHO
+            FROM hopdong hd
+            INNER JOIN khachhang kh ON hd.MAKH = kh.MAKH
+            LEFT JOIN chinhanh cn ON kh.MACN = cn.MACN
+            WHERE hd.SOHD = :soHD
+        `;
+        
+        const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
+        connect = await connectionFromJson.getConnectionFromJson(connectionJson, req.user.chinhanh);
+        
+        const result = await connect.execute(
+            query,
+            { soHD: soHD },
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, message: "Không tìm thấy hợp đồng" });
+        }
+        
+        return res.status(200).json({ success: true, contract: result.rows[0] });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ success: false, message: "Lỗi máy chủ khi lấy chi tiết hợp đồng" });
+    } finally {
+        if (connect) {
+            try {
+                await connect.close();
+            } catch (err) {
+                console.error("Lỗi đóng connection:", err);
+            }
+        }
+    }
+});
+
+router.put("/contracts/:id/pay", verifyToken, authorization("R_ADMIN", "R_MANAGER", "R_STAFF"), async (req, res) => {
+    const soHD = req.params.id;
+    const { soTien } = req.body;
+    const { ulid } = require('ulid');
+    
+    try {
+        const month = new Date().getMonth() + 1;
+        const year = new Date().getFullYear();
+        const maNV = req.user.id;
+        const soHDN = ulid();
+        
+        const queryUpdate = `UPDATE hopdong SET isPaid = 1 WHERE soHD = '${soHD}'`;
+        const queryInsertBill = `
+            INSERT INTO hoadon (soHDN, thang, nam, soHD, maNV, soTien)
+            VALUES ('${soHDN}', ${month}, ${year}, '${soHD}', '${maNV}', ${soTien})
+        `;
+        
+        await Promise.all([
+            send(queryUpdate),
+            send(queryInsertBill)
+        ]);
+        
+        return res.status(200).json({ success: true, message: "Thanh toán hợp đồng và tạo hóa đơn thành công" });
+    } catch (error) {
+        console.log("Lỗi thanh toán hợp đồng:", error);
+        return res.status(500).json({ success: false, message: "Lỗi máy chủ khi thanh toán hợp đồng" });
+    }
+});
+
 router.get("/contractsIsNotPaid/:id", verifyToken, authorization("R_ADMIN", "R_MANAGER", "R_STAFF"), async (req, res) => {
     const SDT = req.params.id;
 

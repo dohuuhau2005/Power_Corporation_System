@@ -1,4 +1,4 @@
-.customers-management {
+.contracts-management {
   background: white;
   padding: 30px;
   border-radius: 12px;
@@ -131,6 +131,28 @@
   border: 1px solid #fcc;
 }
 
+.error-container {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.error-container button {
+  margin-top: 15px;
+  padding: 10px 20px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.error-container button:hover {
+  background: #5568d3;
+}
+
 /* Detail Modal */
 .detail-modal {
   position: fixed;
@@ -154,6 +176,8 @@
   max-height: 80vh;
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-header {
@@ -164,6 +188,7 @@
   border-bottom: 1px solid #eee;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+  flex-shrink: 0;
 }
 
 .modal-header h3 {
@@ -189,6 +214,8 @@
 
 .modal-body {
   padding: 24px;
+  flex-grow: 1;
+  overflow-y: auto;
 }
 
 .detail-row {
@@ -217,13 +244,14 @@
   word-break: break-word;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+.detail-row .value.paid {
+  color: #27ae60;
+  font-weight: 600;
+}
+
+.detail-row .value.unpaid {
+  color: #e74c3c;
+  font-weight: 600;
 }
 
 .modal-footer {
@@ -232,9 +260,10 @@
   padding: 20px;
   border-top: 1px solid #eee;
   background: #f9f9f9;
+  flex-shrink: 0;
 }
 
-.btn-edit,
+.btn-pay,
 .btn-close {
   flex: 1;
   padding: 10px;
@@ -243,16 +272,15 @@
   cursor: pointer;
   font-weight: 600;
   transition: all 0.2s;
-  font-size: 14px;
 }
 
-.btn-edit {
-  background: #667eea;
+.btn-pay {
+  background: #27ae60;
   color: white;
 }
 
-.btn-edit:hover {
-  background: #5568d3;
+.btn-pay:hover {
+  background: #229954;
 }
 
 .btn-close {
@@ -262,4 +290,13 @@
 
 .btn-close:hover {
   background: #ccc;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }

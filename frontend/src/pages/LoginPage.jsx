@@ -6,7 +6,7 @@ import './LoginPage.css'
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const { setUser, setToken, setAuthenticated } = useAuthStore()
+  const { setUser, setAuthenticated } = useAuthStore()
   const [credentials, setCredentials] = useState({
     MaTK: '',
     password: '',
@@ -33,8 +33,8 @@ export default function LoginPage() {
       const response = await login(credentials)
       if (response.message.includes('thành công')) {
         setUser(response.data)
-        setToken(response.token)
         setAuthenticated(true)
+        // Token đã được lưu trong cookie httpOnly bởi server
         navigate(response.data.role === 'R_ADMIN' ? '/admin' : '/employee')
       } else {
         setError(response.message || 'Đăng nhập thất bại')
@@ -103,6 +103,7 @@ export default function LoginPage() {
               value={credentials.ChiNhanh}
               onChange={handleChange}
             >
+            <option value="">Tong bo</option>
               <option value="CN1">CN1</option>
               <option value="CN2">CN2</option>
               <option value="CN3">CN3</option>

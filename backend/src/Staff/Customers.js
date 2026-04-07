@@ -70,6 +70,46 @@ router.post('/customers', verifyToken, authorization("R_ADMIN", "R_MANAGER", "R_
     }
 
 });
+
+router.get('/customers/:id', verifyToken, authorization("R_ADMIN", "R_STAFF", "R_MANAGER"), async (req, res) => {
+    let connect;
+    try {
+        const maKH = req.params.id;
+        const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
+        connect = await connectionFromJson.getConnectionFromJson(connectionJson, req.user.chinhanh);
+        
+        const query = `
+            SELECT kh.MAKH, kh.TENKH, kh.MACN, kh.SDT, cn.TENCN, cn.THANHPHO
+            FROM khachhang kh
+            LEFT JOIN chinhanh cn ON kh.MACN = cn.MACN
+            WHERE kh.MAKH = :maKH
+        `;
+        
+        const result = await connect.execute(
+            query,
+            { maKH: maKH },
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, message: "Không tìm thấy khách hàng" });
+        }
+        
+        return res.status(200).json({ success: true, customer: result.rows[0] });
+    } catch (error) {
+        console.error("Lỗi khi lấy chi tiết khách hàng:", error);
+        return res.status(500).json({ success: false, message: "Lỗi máy chủ khi lấy chi tiết khách hàng" });
+    } finally {
+        if (connect) {
+            try {
+                await connect.close();
+            } catch (err) {
+                console.error("Lỗi đóng connection:", err);
+            }
+        }
+    }
+});
+
 router.put('/customers/:id', verifyToken, authorization("R_ADMIN", "R_MANAGER"), async (req, res) => {
     try {
         const branchLogger = getBranchLogger(req.user.chinhanh);

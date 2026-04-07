@@ -13,6 +13,7 @@ export default function EmployeeOverview() {
         const response = await getEmployeeInfo()
         if (response.success && response.staff && response.staff.length > 0) {
           setEmployeeInfo(response.staff[0])
+          console.log('Thông tin nhân viên:', response.staff[0])
         }
       } catch (err) {
         setError('Không thể tải thông tin nhân viên')
@@ -36,23 +37,23 @@ export default function EmployeeOverview() {
         <div className="info-card">
           <div className="info-row">
             <label>Họ Tên:</label>
-            <span>{employeeInfo.hoten}</span>
+            <span>{employeeInfo.HOTEN}</span>
           </div>
           <div className="info-row">
             <label>Chi Nhánh:</label>
-            <span>{employeeInfo.tenCN}</span>
+            <span>{employeeInfo.TENCN}</span>
           </div>
           <div className="info-row">
             <label>Mã Chi Nhánh:</label>
-            <span>{employeeInfo.maCN}</span>
+            <span>{employeeInfo.MACN}</span>
           </div>
           <div className="info-row">
             <label>Thành Phố:</label>
-            <span>{employeeInfo.thanhpho}</span>
+            <span>{employeeInfo.THANHPHO}</span>
           </div>
           <div className="info-row">
             <label>Vai Trò:</label>
-            <span className="role-badge">{employeeInfo.role}</span>
+            <span className="role-badge">{employeeInfo.ROLE}</span>
           </div>
         </div>
       )}

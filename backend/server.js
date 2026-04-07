@@ -10,11 +10,33 @@ const app = express();
 // ==================================================================
 
 // Cho phép Cors để tránh lỗi chặn truy cập từ Client khác
-app.use(cors());
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Cho phép các request không có origin (như Postman) hoặc từ localhost:3000
+    const allowedOrigins = ['http://localhost:3000'];
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Chặn bởi CORS: Origin không được phép'));
+    }
+  },
+  credentials: true, // Bắt buộc phải có để nhận Cookie/Authorization header
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  optionsSuccessStatus: 204 // Một số trình duyệt cũ (IE11) yêu cầu 204 thay vì 200
+};
+
+app.use(cors(corsOptions));
+
+// Set UTF-8 encoding for all responses
+app.use((req, res, next) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  next();
+});
 
 // Xử lý dữ liệu JSON gửi lên (Thay thế body-parser)
 // Đây là dòng sửa lỗi "Cannot destructure property... of undefined"
-app.use(express.json());
+app.use(express.json({ charset: 'utf-8' }));
 app.use(cookieParser());
 // Xử lý dữ liệu từ form (nếu có)
 app.use(express.urlencoded({ extended: true }));
