@@ -40,14 +40,15 @@ export default function BillsManagement() {
   const handleCreate = async () => {
     try {
       await createBill(formData)
-      setFormData({ 
-        thanhpho: user?.ThanhPho || 'TP1', 
-        soHD: '', 
-        maNV: user?.id || '', 
-        soTien: '' 
+      setFormData({
+        thanhpho: user?.ThanhPho || 'TP1',
+        soHD: '',
+        maNV: user?.id || '',
+        soTien: ''
       })
       setShowForm(false)
-      fetchBills()
+      alert('Tạo hóa đơn thành công!')
+      window.location.reload()
     } catch (err) {
       setError('Không thể tạo hóa đơn: ' + (err.response?.data?.message || err.message))
     }
@@ -75,7 +76,7 @@ export default function BillsManagement() {
   if (error) return <div className="error">{error}</div>
 
   const canCreate = user?.role === 'R_STAFF' || user?.role === 'R_MANAGER' || user?.role === 'R_ADMIN'
-  
+
   return (
     <div className="bills-management">
       <div className="management-header">

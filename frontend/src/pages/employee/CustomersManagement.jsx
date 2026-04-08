@@ -48,7 +48,8 @@ export default function CustomersManagement() {
       await createCustomer(formData)
       setFormData({ maKH: '', tenKH: '', maCN: user?.chinhanh || 'CN1', thanhpho: user?.ThanhPho || 'TP1' })
       setShowForm(false)
-      fetchCustomers()
+      alert('Thêm khách hàng thành công!')
+      window.location.reload()
     } catch (err) {
       setError('Không thể thêm khách hàng: ' + (err.response?.data?.message || err.message))
     }
@@ -58,7 +59,8 @@ export default function CustomersManagement() {
     if (confirm('Bạn có chắc chắn muốn xóa khách hàng này?')) {
       try {
         await deleteCustomer(maKH)
-        fetchCustomers()
+        alert('Xóa khách hàng thành công!')
+        window.location.reload()
       } catch (err) {
         setError('Không thể xóa khách hàng')
       }
@@ -86,8 +88,8 @@ export default function CustomersManagement() {
       })
       setFormData({ maKH: '', tenKH: '', maCN: user?.chinhanh || 'CN1', thanhpho: user?.ThanhPho || 'TP1', SDT: '' })
       setIsEditing(false)
-      fetchCustomers()
       alert('Cập nhật khách hàng thành công!')
+      window.location.reload()
     } catch (err) {
       setError('Không thể cập nhật khách hàng: ' + (err.response?.data?.message || err.message))
     }

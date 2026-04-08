@@ -73,8 +73,9 @@ export default function ContractsManagement() {
         dongiaKW: ''
       })
       setShowForm(false)
-      fetchData()
       setError('')
+      alert('Tạo hợp đồng thành công!')
+      window.location.reload()
     } catch (err) {
       setError('Không thể thêm hợp đồng: ' + (err.response?.data?.message || err.message))
     }
@@ -84,7 +85,8 @@ export default function ContractsManagement() {
     if (confirm('Bạn có chắc chắn muốn xóa hợp đồng này?')) {
       try {
         await deleteContract(soHD)
-        fetchData()
+        alert('Xóa hợp đồng thành công!')
+        window.location.reload()
       } catch (err) {
         setError('Không thể xóa hợp đồng')
       }
@@ -132,10 +134,10 @@ export default function ContractsManagement() {
 
       await updateContract(selectedContract.SOHD, updateData)
       setIsEditing(false)
-      fetchData()
       setShowDetail(false)
       setSelectedContract(null)
       alert('Cập nhật hợp đồng thành công!')
+      window.location.reload()
     } catch (err) {
       setError('Không thể cập nhật hợp đồng: ' + (err.response?.data?.message || err.message))
     }
@@ -154,8 +156,8 @@ export default function ContractsManagement() {
       await payContract(selectedContract.SOHD, { soTien: parseFloat(soTien) })
       setShowDetail(false)
       setSelectedContract(null)
-      fetchData()
       alert('Thanh toán hợp đồng thành công!')
+      window.location.reload()
     } catch (err) {
       setError('Không thể thanh toán hợp đồng: ' + (err.response?.data?.message || err.message))
     }

@@ -8,21 +8,21 @@ const EncryptAES = require('./config/EncryptAES');
 
 router.post('/', async (req, res) => {
     const { MaTK, password, ThanhPho, ChiNhanh } = req.body;
-    
+
     // Đổi tên biến cho đồng nhất
     let currentConnection;
     let connectRole;
 
     try {
         console.log("👉 Đăng nhập:", MaTK, password, ThanhPho, ChiNhanh);
-        
+
         // Gán đúng biến đã khai báo bên ngoài
         const branchData = await connections.getConnectionForBranch(MaTK, password, ThanhPho, ChiNhanh);
         currentConnection = branchData.connection;
         const connectionString = branchData.connectionJson;
 
         connectRole = await connectionsRule.getConnectionForRole(MaTK, password);
-        
+
         const roleQuery = `
         SELECT ROLE 
         FROM SESSION_ROLES 
@@ -60,7 +60,9 @@ router.post('/', async (req, res) => {
         if (!nhanVien) {
             return res.status(401).json({ message: "Sai mã nhân viên hoặc không thuộc chi nhánh này!" });
         }
-
+        if (nhanVien.STATUS == 2) {
+            return res.status(401).json({ isBlocked: true, message: "Tài khoản của bạn đã bị khóa!" });
+        }
         // ==========================================
         // ĐOẠN ĐÃ ĐƯỢC SỬA ĐỂ FRONTEND NHẬN ĐÚNG ROLE
         // ==========================================

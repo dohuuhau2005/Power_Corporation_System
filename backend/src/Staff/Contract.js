@@ -114,7 +114,7 @@ router.delete("/contracts/:id", verifyToken, authorization("R_ADMIN", "R_MANAGER
     try {
         const query = `
             DELETE FROM hopdong
-            WHERE soHD = ${soHD}
+            WHERE soHD = '${soHD}'
         `;
         await send(query);
         await branchLogger.delete(`Xóa hợp đồng thành công +${soHD}`, { MaNV: req.user.manv, soHD: soHD });

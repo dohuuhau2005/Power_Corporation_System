@@ -7,7 +7,7 @@ import './StaffsManagement.css'
 export default function StaffsManagement() {
   const { user } = useAuthStore()
   const isAdmin = user?.role === 'R_ADMIN'
-  
+
   const [staffs, setStaffs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -19,7 +19,8 @@ export default function StaffsManagement() {
     maNV: '',
     hoten: '',
     maCN: 'CN1',
-    role: 'R_STAFF'
+    role: 'R_STAFF',
+    status: null
   })
 
   useEffect(() => {
@@ -42,9 +43,10 @@ export default function StaffsManagement() {
   const handleAdd = async () => {
     try {
       await createStaff(formData)
-      setFormData({ maNV: '', hoten: '', maCN: 'CN1', role: 'R_STAFF' })
+      setFormData({ maNV: '', hoten: '', maCN: 'CN1', role: 'R_STAFF', status: null })
       setShowForm(false)
-      fetchStaffs()
+      alert('Thêm nhân viên thành công!')
+      window.location.reload()
     } catch (err) {
       setError('Lỗi hệ thống: Không thể thêm nhân viên. ' + (err.response?.data?.message || err.message))
     }
@@ -66,7 +68,8 @@ export default function StaffsManagement() {
       maNV: staff.MANV,
       hoten: staff.HOTEN,
       maCN: staff.MACN || 'CN1',
-      role: staff.ROLE || 'R_STAFF'
+      role: staff.ROLE || 'R_STAFF',
+      status: staff.STATUS || null
     })
     setIsEditing(true)
     setShowDetail(false)
@@ -74,15 +77,20 @@ export default function StaffsManagement() {
 
   const handleSaveEdit = async () => {
     try {
-      await updateStaff(formData.maNV, {
+      const updateData = {
         hoten: formData.hoten,
         maCN: formData.maCN,
         role: formData.role
-      })
-      setFormData({ maNV: '', hoten: '', maCN: 'CN1', role: 'R_STAFF' })
+      }
+      if (formData.status !== null) {
+        updateData.status = formData.status
+      }
+
+      await updateStaff(formData.maNV, updateData)
+      setFormData({ maNV: '', hoten: '', maCN: 'CN1', role: 'R_STAFF', status: null })
       setIsEditing(false)
-      fetchStaffs()
       alert('Cập nhật nhân viên thành công!')
+      window.location.reload()
     } catch (err) {
       setError('Lỗi hệ thống: Không thể cập nhật nhân viên. ' + (err.response?.data?.message || err.message))
     }
@@ -123,7 +131,7 @@ export default function StaffsManagement() {
       <p>Đang đồng bộ hồ sơ nhân sự...</p>
     </div>
   )
-  
+
   if (error) return (
     <div className="state-container error">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
@@ -150,7 +158,7 @@ export default function StaffsManagement() {
             <p className="sm-subtitle">Danh sách cán bộ và nhân viên điện lực</p>
           </div>
         </div>
-        
+
         {isAdmin && (
           <button className="btn-add" onClick={() => setShowForm(!showForm)}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -164,7 +172,7 @@ export default function StaffsManagement() {
           <div className="form-box-header">
             <h3>Đăng Ký Nhân Sự Mới</h3>
           </div>
-          
+
           <div className="form-grid">
             <div className="form-group">
               <label>Mã Nhân Viên (ID)</label>
@@ -176,7 +184,7 @@ export default function StaffsManagement() {
                 autoFocus
               />
             </div>
-            
+
             <div className="form-group">
               <label>Họ và Tên</label>
               <input
@@ -186,7 +194,7 @@ export default function StaffsManagement() {
                 placeholder="Nhập đầy đủ họ tên..."
               />
             </div>
-            
+
             <div className="form-group">
               <label>Đơn Vị Công Tác (Chi Nhánh)</label>
               <select
@@ -199,7 +207,7 @@ export default function StaffsManagement() {
                 <option value="CN4">CN4 - Điện lực Ngoại Ô</option>
               </select>
             </div>
-            
+
             <div className="form-group">
               <label>Chức Vụ / Phân Quyền</label>
               <select
@@ -211,9 +219,19 @@ export default function StaffsManagement() {
                 <option value="R_ADMIN">Quản Trị Viên Hệ Thống</option>
               </select>
             </div>
-          </div>
 
-          <div className="form-actions">
+            <div className="form-group">
+              <label>Trạng Thái Hoạt Động (Tùy chọn)</label>
+              <select
+                value={formData.status === null ? '' : formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value === '' ? null : parseInt(e.target.value) })}
+              >
+                <option value="">-- Không chọn (Null) --</option>
+                <option value="1">✓ Hoạt Động</option>
+                <option value="0">✗ Không Hoạt Động</option>
+              </select>
+            </div>
+          </div>          <div className="form-actions">
             <button onClick={() => setShowForm(false)} className="btn-cancel">Hủy thao tác</button>
             <button onClick={handleAdd} className="btn-save">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
@@ -228,7 +246,7 @@ export default function StaffsManagement() {
           <div className="form-box-header">
             <h3>✎ Chỉnh Sửa Thông Tin Nhân Viên</h3>
           </div>
-          
+
           <div className="form-grid">
             <div className="form-group">
               <label>Mã Nhân Viên (ID) - Không thể sửa</label>
@@ -238,7 +256,7 @@ export default function StaffsManagement() {
                 disabled
               />
             </div>
-            
+
             <div className="form-group">
               <label>Họ và Tên</label>
               <input
@@ -248,7 +266,7 @@ export default function StaffsManagement() {
                 placeholder="Nhập đầy đủ họ tên..."
               />
             </div>
-            
+
             <div className="form-group">
               <label>Đơn Vị Công Tác (Chi Nhánh)</label>
               <select
@@ -261,7 +279,7 @@ export default function StaffsManagement() {
                 <option value="CN4">CN4 - Điện lực Ngoại Ô</option>
               </select>
             </div>
-            
+
             <div className="form-group">
               <label>Chức Vụ / Phân Quyền</label>
               <select
@@ -273,10 +291,20 @@ export default function StaffsManagement() {
                 <option value="R_ADMIN">Quản Trị Viên Hệ Thống</option>
               </select>
             </div>
-          </div>
 
-          <div className="form-actions">
-            <button onClick={() => { setIsEditing(false); setFormData({ maNV: '', hoten: '', maCN: 'CN1', role: 'R_STAFF' }) }} className="btn-cancel">Hủy thao tác</button>
+            <div className="form-group">
+              <label>Trạng Thái Hoạt Động (Tùy chọn)</label>
+              <select
+                value={formData.status === null ? '' : formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value === '' ? null : parseInt(e.target.value) })}
+              >
+                <option value="">-- Không chọn (Null) --</option>
+                <option value="1">✓ Hoạt Động</option>
+                <option value="0">✗ Không Hoạt Động</option>
+              </select>
+            </div>
+          </div>          <div className="form-actions">
+            <button onClick={() => { setIsEditing(false); setFormData({ maNV: '', hoten: '', maCN: 'CN1', role: 'R_STAFF', status: null }) }} className="btn-cancel">Hủy thao tác</button>
             <button onClick={handleSaveEdit} className="btn-save">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
               Lưu Thay Đổi

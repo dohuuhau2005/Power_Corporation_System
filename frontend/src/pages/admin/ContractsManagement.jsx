@@ -8,7 +8,7 @@ export default function ContractsManagement() {
   const { user } = useAuthStore()
   const canManage = user?.role === 'R_ADMIN' || user?.role === 'R_MANAGER'
   const canPay = user?.role === 'R_STAFF' || user?.role === 'R_MANAGER' || user?.role === 'R_ADMIN'
-  
+
   const [contracts, setContracts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
