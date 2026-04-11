@@ -43,3 +43,9 @@ ADMIN
    nhân viên 
    câu 1
    câu 2
+
+
+   pool
+   lich su cong tac 
+   send check bất đồng bộ 
+   AI 

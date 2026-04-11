@@ -1,17 +1,24 @@
 import { useEffect, useState } from 'react'
+import { getBills, createBill, getBillDetail } from '../../services/api'
 import { useAuthStore } from '../../store/authStore'
+// PERMISSIONS: R_STAFF can create invoices only
 import Table from '../../components/Table'
 import './BillsManagement.css'
 
 export default function BillsManagement() {
   const { user } = useAuthStore()
-  const isAdmin = user?.role === 'R_ADMIN'
-  
   const [bills, setBills] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [showForm, setShowForm] = useState(false)
   const [showDetail, setShowDetail] = useState(false)
   const [selectedBill, setSelectedBill] = useState(null)
+  const [formData, setFormData] = useState({
+    thanhpho: user?.ThanhPho || 'TP1',
+    soHD: '',
+    maNV: user?.id || '',
+    soTien: ''
+  })
 
   useEffect(() => {
     fetchBills()
@@ -20,23 +27,8 @@ export default function BillsManagement() {
   const fetchBills = async () => {
     try {
       setLoading(true)
-      // Simulate API call - thực tế cần endpoint admin xem tất cả bills
-      // const response = await api.get('/admin/bills')
-      // setBills(response.bills || [])
-      
-      // Mock data for demo
-      setBills([
-        {
-          SOHDN: 'HDN001',
-          THANG: 4,
-          NAM: 2026,
-          SOHD: 'HD001',
-          MANV: 'NV_101',
-          SOTIEN: 2500000,
-          TENKH: 'Khách Hàng A',
-          TENNV: 'Nhân Viên 1'
-        }
-      ])
+      const response = await getBills(user?.id)
+      setBills(response.bills || [])
     } catch (err) {
       setError('Không thể tải dữ liệu hóa đơn')
       console.error(err)
@@ -45,63 +37,82 @@ export default function BillsManagement() {
     }
   }
 
-  const handleViewDetail = (bill) => {
-    setSelectedBill(bill)
-    setShowDetail(true)
+  const handleCreate = async () => {
+    try {
+      await createBill(formData)
+      setFormData({
+        thanhpho: user?.ThanhPho || 'TP1',
+        soHD: '',
+        maNV: user?.id || '',
+        soTien: ''
+      })
+      setShowForm(false)
+      alert('Tạo hóa đơn thành công!')
+      window.location.reload()
+    } catch (err) {
+      setError('Không thể tạo hóa đơn: ' + (err.response?.data?.message || err.message))
+    }
+  }
+
+  const handleViewDetail = async (bill) => {
+    try {
+      const response = await getBillDetail(bill.SOHDN)
+      setSelectedBill(response.bill)
+      setShowDetail(true)
+    } catch (err) {
+      setError('Không thể tải chi tiết: ' + err.message)
+    }
   }
 
   const columns = [
-    { key: 'SOHDN', label: 'Số Hóa Đơn' },
-    { key: 'SOHD', label: 'Số Hợp Đồng' },
-    { key: 'TENKH', label: 'Tên Khách Hàng' },
+    { key: 'SOHDN', label: 'Số HĐN' },
     { key: 'THANG', label: 'Tháng' },
     { key: 'NAM', label: 'Năm' },
-    {
-      key: 'SOTIEN',
-      label: 'Số Tiền (VNĐ)',
-      render: (value) => new Intl.NumberFormat('vi-VN').format(value)
-    }
+    { key: 'SOHD', label: 'Số HD' },
+    { key: 'SOTIEN', label: 'Số Tiền' }
   ]
 
-  const actions = [
-    {
-      label: 'Xem Chi Tiết',
-      onClick: (row) => handleViewDetail(row)
-    }
-  ]
+  if (loading) return <div className="loading">Đang tải...</div>
+  if (error) return <div className="error">{error}</div>
 
-  if (loading) return (
-    <div className="state-container">
-      <div className="loader-pulse"></div>
-      <p>Đang tải dữ liệu hóa đơn...</p>
-    </div>
-  )
-
-  if (error) return (
-    <div className="state-container error">
-      <p>{error}</p>
-      <button onClick={fetchBills} className="btn-retry">Thử lại</button>
-    </div>
-  )
+  const canCreate = user?.role === 'R_STAFF' || user?.role === 'R_MANAGER' || user?.role === 'R_ADMIN'
 
   return (
     <div className="bills-management">
       <div className="management-header">
-        <div className="sm-title-group">
-          <div className="icon-wrapper">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="12" y1="19" x2="12" y2="12"></line>
-              <line x1="9" y1="16" x2="15" y2="16"></line>
-            </svg>
+        <h2>Quản Lý Hóa Đơn</h2>
+
+      </div>
+
+      {showForm && canCreate && (
+        <div className="form-box">
+          <h3>Tạo Hóa Đơn Mới</h3>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Số Hợp Đồng</label>
+              <input
+                type="text"
+                value={formData.soHD}
+                onChange={(e) => setFormData({ ...formData, soHD: e.target.value })}
+                placeholder="Nhập số hợp đồng"
+              />
+            </div>
+            <div className="form-group">
+              <label>Số Tiền (VNĐ)</label>
+              <input
+                type="number"
+                value={formData.soTien}
+                onChange={(e) => setFormData({ ...formData, soTien: e.target.value })}
+                placeholder="Nhập số tiền"
+              />
+            </div>
           </div>
-          <div>
-            <h2>Quản Lý Hóa Đơn</h2>
-            <p className="sm-subtitle">Danh sách toàn bộ hóa đơn thanh toán trong hệ thống</p>
+          <div className="form-actions">
+            <button onClick={handleCreate} className="btn-save">Tạo Hóa Đơn</button>
+            <button onClick={() => setShowForm(false)} className="btn-cancel">Hủy</button>
           </div>
         </div>
-      </div>
+      )}
 
       {showDetail && selectedBill && (
         <div className="detail-modal">
@@ -112,42 +123,54 @@ export default function BillsManagement() {
             </div>
             <div className="modal-body">
               <div className="detail-row">
-                <span className="label">Số Hóa Đơn:</span>
+                <span className="label">Số HĐN:</span>
                 <span className="value">{selectedBill.SOHDN}</span>
+              </div>
+              <div className="detail-row">
+                <span className="label">Tháng/Năm:</span>
+                <span className="value">{selectedBill.THANG}/{selectedBill.NAM}</span>
               </div>
               <div className="detail-row">
                 <span className="label">Số Hợp Đồng:</span>
                 <span className="value">{selectedBill.SOHD}</span>
               </div>
               <div className="detail-row">
-                <span className="label">Tên Khách Hàng:</span>
+                <span className="label">Khách Hàng:</span>
                 <span className="value">{selectedBill.TENKH}</span>
+              </div>
+              {selectedBill.SODIENKE && (
+                <div className="detail-row">
+                  <span className="label">Số Điện Kế:</span>
+                  <span className="value">{selectedBill.SODIENKE}</span>
+                </div>
+              )}
+              {selectedBill.KWDINHMUC && (
+                <div className="detail-row">
+                  <span className="label">Định Mức:</span>
+                  <span className="value">{selectedBill.KWDINHMUC} kWh</span>
+                </div>
+              )}
+              <div className="detail-row">
+                <span className="label">Số Tiền:</span>
+                <span className="value" style={{ color: '#27ae60', fontWeight: 'bold' }}>
+                  {parseInt(selectedBill.SOTIEN).toLocaleString('vi-VN')} VNĐ
+                </span>
               </div>
               <div className="detail-row">
                 <span className="label">Nhân Viên:</span>
-                <span className="value">{selectedBill.TENNV || selectedBill.MANV}</span>
+                <span className="value">{selectedBill.MANV}</span>
               </div>
-              <div className="detail-row">
-                <span className="label">Tháng / Năm:</span>
-                <span className="value">{selectedBill.THANG}/{selectedBill.NAM}</span>
-              </div>
-              <div className="detail-row highlight">
-                <span className="label">Số Tiền:</span>
-                <span className="value">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(selectedBill.SOTIEN)}</span>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button onClick={() => { setShowDetail(false); setSelectedBill(null) }} className="btn-close">
-                Đóng
-              </button>
             </div>
           </div>
         </div>
       )}
 
-      <div className="table-container">
-        <Table columns={columns} data={bills} actions={actions} />
-      </div>
+      <Table columns={columns} data={bills} actions={[
+        {
+          label: 'Xem Chi Tiết',
+          onClick: (row) => handleViewDetail(row)
+        }
+      ]} />
     </div>
   )
 }

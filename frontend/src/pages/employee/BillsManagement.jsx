@@ -81,14 +81,7 @@ export default function BillsManagement() {
     <div className="bills-management">
       <div className="management-header">
         <h2>Quản Lý Hóa Đơn</h2>
-        {canCreate && (
-          <button
-            className="btn-add"
-            onClick={() => setShowForm(!showForm)}
-          >
-            + Tạo Hóa Đơn
-          </button>
-        )}
+
       </div>
 
       {showForm && canCreate && (

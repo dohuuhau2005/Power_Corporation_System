@@ -64,6 +64,17 @@ export default function ContractsManagement() {
       setError('Vui lòng điền đầy đủ thông tin')
       return
     }
+
+    if (Number(formData.kwDinhMuc) <= 0) {
+      setError('Định mức kW phải lớn hơn 0')
+      return
+    }
+
+    if (Number(formData.dongiaKW) <= 1000) {
+      setError('Đơn giá kW phải lớn hơn 1000')
+      return
+    }
+
     try {
       await createContract(formData)
       setFormData({
@@ -121,6 +132,16 @@ export default function ContractsManagement() {
     try {
       if (!selectedContract) return
 
+      if (editData.kwDinhMuc && Number(editData.kwDinhMuc) <= 0) {
+        setError('Định mức kW phải lớn hơn 0')
+        return
+      }
+
+      if (editData.dongiaKW && Number(editData.dongiaKW) <= 1000) {
+        setError('Đơn giá kW phải lớn hơn 1000')
+        return
+      }
+
       const updateData = {}
       if (editData.soDienKe && editData.soDienKe !== selectedContract.SODIENKE) {
         updateData.soDienKe = editData.soDienKe
@@ -149,6 +170,11 @@ export default function ContractsManagement() {
     const soTien = prompt('Nhập số tiền thanh toán:')
     if (!soTien || isNaN(soTien)) {
       setError('Số tiền không hợp lệ')
+      return
+    }
+
+    if (Number(soTien) <= 1000) {
+      setError('Số tiền thanh toán phải lớn hơn 1000')
       return
     }
 

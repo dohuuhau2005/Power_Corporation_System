@@ -17,11 +17,12 @@ const getBranchLogger = require('../config/logger');
 
 router.get('/staffs', verifyToken, authorization("R_ADMIN"), async (req, res) => {
     let connect;
+    const id = req.user.id;
     try {
         const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
 
         connect = await connectionFromJson.getConnectionFromJson(connectionJson, req.user.chinhanh);
-        const query = `SELECT * FROM nhanvien`;
+        const query = `SELECT * FROM nhanvien where maNV != '${id}'`;
         const result = await connect.execute(
             query,
             {},

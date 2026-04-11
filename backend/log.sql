@@ -1094,3 +1094,85 @@ GRANT READ, WRITE ON DIRECTORY backup_dir TO sys;
 
 alter table lichSuChuyenCongTac
 alter column maKH varchar2(26)
+
+CREATE INDEX idx_khachhang_macn ON khachhang (maCN);
+ALTER TABLE khachhang MODIFY
+PARTITION BY LIST (maCN) (
+    PARTITION p_cn1 VALUES ('CN1'),
+    PARTITION p_cn2 VALUES ('CN2'),
+    PARTITION p_cn3 VALUES ('CN3'),
+    PARTITION p_cn4 VALUES ('CN4'),
+    PARTITION p_khac VALUES (DEFAULT)
+) ONLINE;
+
+
+ALTER SESSION SET CONTAINER = TongBo;
+ALTER SESSION SET CURRENT_SCHEMA = db_dienluc;
+
+CREATE OR REPLACE TRIGGER trg_check_Input_hopdong
+BEFORE INSERT OR UPDATE ON hopdong
+FOR EACH ROW
+BEGIN
+    
+        -- Kiểm tra nếu số tiền nhập vào nhỏ hơn 0
+    IF :NEW.dongiaKW < 1000 THEN
+        -- Bắn ra mã lỗi tự định nghĩa (từ -20000 đến -20999) và chặn giao dịch
+        RAISE_APPLICATION_ERROR(
+            -20005, 
+            'LỖI NGHIỆP VỤ: Số tiền trên 1 kw (dongiaKW = ' || :NEW.dongiaKW || ') không được phép nhỏ hơn 1000!'
+        );
+    END IF;
+    -- Kiểm tra nếu số tiền nhập vào nhỏ hơn 0
+    IF :NEW.kwDinhMuc < 0 THEN
+        -- Bắn ra mã lỗi tự định nghĩa (từ -20000 đến -20999) và chặn giao dịch
+        RAISE_APPLICATION_ERROR(
+            -20005, 
+            'LỖI NGHIỆP VỤ: Số kw định mức (kwDinhMuc = ' || :NEW.kwDinhMuc || ') không được phép là số âm!'
+        );
+    END IF;
+END;
+
+
+in
+
+
+
+/
+
+
+
+CREATE OR REPLACE TRIGGER trg_check_sotien_hoadon
+BEFORE INSERT OR UPDATE ON hoadon
+FOR EACH ROW
+BEGIN
+    -- Kiểm tra nếu số tiền nhập vào nhỏ hơn 0
+    IF :NEW.soTien < 1000 THEN
+        -- Bắn ra mã lỗi tự định nghĩa (từ -20000 đến -20999) và chặn giao dịch
+        RAISE_APPLICATION_ERROR(
+            -20005, 
+            'LỖI NGHIỆP VỤ: Số tiền hóa đơn (soTien = ' || :NEW.soTien || ') không được phép nhỏ hơn 1000!'
+        );
+    END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_check_nhanvien_hoten
+BEFORE INSERT OR UPDATE ON db_dienluc.nhanvien
+FOR EACH ROW
+BEGIN
+    -- 1. Kiểm tra rỗng hoặc chỉ có khoảng trắng
+    IF :NEW.hoten IS NULL OR TRIM(:NEW.hoten) IS NULL THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Loi DB: Ten nhan vien khong duoc de trong!');
+    END IF;
+
+    -- 2. Kiểm tra độ dài (phải từ 2 ký tự trở lên)
+    IF LENGTH(:NEW.hoten) < 2 THEN
+        RAISE_APPLICATION_ERROR(-20002, 'Loi DB: Ten nhan vien phai tu 2 ky tu tro len!');
+    END IF;
+
+    -- 3. Kiểm tra không chứa số (Sử dụng biểu thức chính quy của Oracle)
+    IF REGEXP_LIKE(:NEW.hoten, '[0-9]') THEN
+        RAISE_APPLICATION_ERROR(-20003, 'Loi DB: Ten nhan vien khong duoc chua chu so!');
+    END IF;
+END;
+/

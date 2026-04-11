@@ -17,19 +17,21 @@ export default function Table({ columns, data, actions }) {
             data.map((row, idx) => (
               <tr key={idx}>
                 {columns.map((col) => (
-                  <td key={col.key}>{row[col.key]}</td>
+                  <td key={col.key}>{col.render ? col.render(row[col.key], row) : row[col.key]}</td>
                 ))}
                 {actions && (
                   <td className="actions-cell">
-                    {actions.map((action, i) => (
-                      <button
-                        key={i}
-                        className="action-btn"
-                        onClick={() => action.onClick(row)}
-                      >
-                        {action.label}
-                      </button>
-                    ))}
+                    {actions
+                      .filter((action) => !action.isVisible || action.isVisible(row))
+                      .map((action, i) => (
+                        <button
+                          key={i}
+                          className="action-btn"
+                          onClick={() => action.onClick(row)}
+                        >
+                          {action.label}
+                        </button>
+                      ))}
                   </td>
                 )}
               </tr>

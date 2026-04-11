@@ -12,81 +12,121 @@
   margin-bottom: 30px;
 }
 
-.sm-title-group {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.icon-wrapper {
-  width: 50px;
-  height: 50px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-}
-
-.sm-title-group h2 {
+.management-header h2 {
   font-size: 24px;
   color: #333;
   margin: 0;
 }
 
-.sm-subtitle {
-  font-size: 14px;
-  color: #999;
-  margin: 5px 0 0 0;
+.btn-add {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s;
 }
 
-.state-container {
+.btn-add:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+}
+
+.form-box {
+  background: #f9f9f9;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+  border-left: 4px solid #667eea;
+}
+
+.form-box h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn-save,
+.btn-cancel {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-save {
+  background: #667eea;
+  color: white;
+}
+
+.btn-save:hover {
+  background: #5568d3;
+}
+
+.btn-cancel {
+  background: #ddd;
+  color: #333;
+}
+
+.btn-cancel:hover {
+  background: #ccc;
+}
+
+.loading,
+.error {
   padding: 40px;
   text-align: center;
   border-radius: 8px;
   background: white;
 }
 
-.state-container.error {
+.error {
   background: #fee;
   color: #c00;
   border: 1px solid #fcc;
-}
-
-.loader-pulse {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #eee;
-  border-top-color: #667eea;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 15px;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.btn-retry {
-  margin-top: 15px;
-  padding: 8px 16px;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.btn-retry:hover {
-  background: #5568d3;
-}
-
-.table-container {
-  overflow-x: auto;
 }
 
 /* Detail Modal */
@@ -112,8 +152,6 @@
   max-height: 80vh;
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  display: flex;
-  flex-direction: column;
 }
 
 .modal-header {
@@ -124,7 +162,6 @@
   border-bottom: 1px solid #eee;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  flex-shrink: 0;
 }
 
 .modal-header h3 {
@@ -150,8 +187,6 @@
 
 .modal-body {
   padding: 24px;
-  flex-grow: 1;
-  overflow-y: auto;
 }
 
 .detail-row {
@@ -160,13 +195,6 @@
   padding: 12px 0;
   border-bottom: 1px solid #eee;
   font-size: 14px;
-}
-
-.detail-row.highlight {
-  background: #f0f4ff;
-  padding: 12px;
-  margin: 8px -12px;
-  border-left: 3px solid #667eea;
 }
 
 .detail-row:last-child {
@@ -185,38 +213,13 @@
   flex: 1;
   padding-left: 20px;
   word-break: break-word;
-  font-weight: 500;
-}
-
-.modal-footer {
-  display: flex;
-  gap: 10px;
-  padding: 20px;
-  border-top: 1px solid #eee;
-  background: #f9f9f9;
-  flex-shrink: 0;
-}
-
-.btn-close {
-  flex: 1;
-  padding: 10px;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.2s;
-}
-
-.btn-close:hover {
-  background: #5568d3;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
