@@ -1,10 +1,11 @@
 ;;; 
-Export: Release 21.0.0.0.0 - Production on Sat Mar 28 10:17:38 2026
+Export: Release 21.0.0.0.0 - Production on Sat Apr 11 14:44:36 2026
 Version 21.3.0.0.0
 
 Copyright (c) 1982, 2021, Oracle and/or its affiliates.  All rights reserved.
 ;;; 
 Connected to: Oracle Database 21c Express Edition Release 21.0.0.0.0 - Production
+FLASHBACK automatically enabled to preserve database integrity.
 Starting "SYS"."SYS_EXPORT_FULL_02":  userid="sys/********@localhost:1521/TongBo AS SYSDBA" DIRECTORY=backup_dir DUMPFILE=TongBo_Full.dmp LOGFILE=TongBo_Full_log.log FULL=Y 
 Processing object type DATABASE_EXPORT/EARLY_OPTIONS/VIEWS_AS_TABLES/TABLE_DATA
 Processing object type DATABASE_EXPORT/NORMAL_OPTIONS/TABLE_DATA
@@ -30,6 +31,7 @@ Processing object type DATABASE_EXPORT/RESOURCE_COST
 Processing object type DATABASE_EXPORT/SCHEMA/DB_LINK
 Processing object type DATABASE_EXPORT/TRUSTED_DB_LINK
 Processing object type DATABASE_EXPORT/DIRECTORY/DIRECTORY
+Processing object type DATABASE_EXPORT/DIRECTORY/GRANT/OWNER_GRANT/OBJECT_GRANT
 Processing object type DATABASE_EXPORT/SYSTEM_PROCOBJACT/PRE_SYSTEM_ACTIONS/PROCACT_SYSTEM
 Processing object type DATABASE_EXPORT/SYSTEM_PROCOBJACT/PROCOBJ
 Processing object type DATABASE_EXPORT/SYSTEM_PROCOBJACT/POST_SYSTEM_ACTIONS/PROCACT_SYSTEM
@@ -41,6 +43,8 @@ Processing object type DATABASE_EXPORT/NORMAL_OPTIONS/VIEWS_AS_TABLES/TABLE
 Processing object type DATABASE_EXPORT/NORMAL_POST_INSTANCE_IMPCALLOUT/MARKER
 Processing object type DATABASE_EXPORT/SCHEMA/TABLE/TABLE
 Processing object type DATABASE_EXPORT/SCHEMA/TABLE/GRANT/OWNER_GRANT/OBJECT_GRANT
+Processing object type DATABASE_EXPORT/SCHEMA/TABLE/IDENTITY_COLUMN
+Processing object type DATABASE_EXPORT/SCHEMA/TABLE/INDEX/INDEX
 Processing object type DATABASE_EXPORT/SCHEMA/TABLE/CONSTRAINT/CONSTRAINT
 Processing object type DATABASE_EXPORT/SCHEMA/TABLE/CONSTRAINT/REF_CONSTRAINT
 Processing object type DATABASE_EXPORT/SCHEMA/TABLE/TRIGGER
@@ -48,12 +52,17 @@ Processing object type DATABASE_EXPORT/FINAL_POST_INSTANCE_IMPCALLOUT/MARKER
 Processing object type DATABASE_EXPORT/AUDIT_UNIFIED/AUDIT_POLICY_ENABLE
 Processing object type DATABASE_EXPORT/POST_SYSTEM_IMPCALLOUT/MARKER
 . . exported "SYS"."KU$_USER_MAPPING_VIEW"               6.195 KB      44 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P1081"          77.38 KB      56 rows
 . . exported "AUDSYS"."AUD$UNIFIED":"SYS_P461"           63.30 KB      20 rows
 . . exported "AUDSYS"."AUD$UNIFIED":"SYS_P1001"          58.16 KB      12 rows
 . . exported "AUDSYS"."AUD$UNIFIED":"SYS_P541"           57.71 KB      11 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P1461"          56.02 KB       7 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P1101"          55.87 KB       8 rows
 . . exported "AUDSYS"."AUD$UNIFIED":"SYS_P333"           55.39 KB       6 rows
 . . exported "AUDSYS"."AUD$UNIFIED":"SYS_P281"           55.12 KB       6 rows
 . . exported "AUDSYS"."AUD$UNIFIED":"SYS_P861"           53.26 KB       2 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P1221"          53.20 KB       1 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P1621"          53.14 KB       1 rows
 . . exported "SYSTEM"."REDO_DB"                          26.01 KB       1 rows
 . . exported "WMSYS"."WM$WORKSPACES_TABLE$"              12.10 KB       1 rows
 . . exported "WMSYS"."WM$HINT_TABLE$"                    9.984 KB      97 rows
@@ -71,8 +80,7 @@ Processing object type DATABASE_EXPORT/POST_SYSTEM_IMPCALLOUT/MARKER
 . . exported "LBACSYS"."OLS$AUDIT_ACTIONS"               5.757 KB       8 rows
 . . exported "LBACSYS"."OLS$DIP_EVENTS"                  5.539 KB       2 rows
 . . exported "AUDSYS"."AUD$UNIFIED":"AUD_UNIFIED_P0"         0 KB       0 rows
-. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P1081"          77.38 KB      56 rows
-. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P1101"          55.87 KB       8 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P1741"          54.33 KB       4 rows
 . . exported "LBACSYS"."OLS$AUDIT"                           0 KB       0 rows
 . . exported "LBACSYS"."OLS$COMPARTMENTS"                    0 KB       0 rows
 . . exported "LBACSYS"."OLS$DIP_DEBUG"                       0 KB       0 rows
@@ -134,17 +142,22 @@ Processing object type DATABASE_EXPORT/POST_SYSTEM_IMPCALLOUT/MARKER
 . . exported "SYS"."SQLOBJ$DATA_DATAPUMP"                    0 KB       0 rows
 . . exported "SYS"."SQLOBJ$PLAN_DATAPUMP"                    0 KB       0 rows
 . . exported "SYS"."SQLOBJ$_DATAPUMP"                        0 KB       0 rows
-. . exported "SYSTEM"."SCHEDULER_JOB_ARGS"               8.781 KB       6 rows
+. . exported "SYSTEM"."SCHEDULER_JOB_ARGS"               8.773 KB       6 rows
 . . exported "SYSTEM"."SCHEDULER_PROGRAM_ARGS"           9.726 KB      13 rows
 . . exported "WMSYS"."WM$EXP_MAP"                        7.718 KB       3 rows
 . . exported "WMSYS"."WM$METADATA_MAP"                       0 KB       0 rows
-. . exported "DB_DIENLUC"."HOPDONG"                      7.968 KB       4 rows
-. . exported "DB_DIENLUC"."HOADON"                       7.445 KB       4 rows
-. . exported "DB_DIENLUC"."NHANVIEN"                     7.101 KB       5 rows
-. . exported "DB_DIENLUC"."KHACHHANG"                    6.625 KB       4 rows
+. . exported "DB_DIENLUC"."HOPDONG"                      8.757 KB      14 rows
+. . exported "DB_DIENLUC"."HOADON"                       7.890 KB      10 rows
+. . exported "DB_DIENLUC"."LICHSUCHUYENCONGTAC"          7.234 KB       2 rows
+. . exported "DB_DIENLUC"."NHANVIEN"                     7.140 KB       6 rows
+. . exported "DB_DIENLUC"."KHACHHANG":"P_CN3"            6.609 KB       4 rows
+. . exported "DB_DIENLUC"."KHACHHANG":"P_CN1"            6.468 KB       2 rows
+. . exported "DB_DIENLUC"."KHACHHANG":"P_CN2"            6.398 KB       1 rows
+. . exported "DB_DIENLUC"."KHACHHANG":"P_CN4"            6.390 KB       1 rows
 . . exported "DB_DIENLUC"."CHINHANH"                     6.218 KB       5 rows
+. . exported "DB_DIENLUC"."KHACHHANG":"P_KHAC"               0 KB       0 rows
 Master table "SYS"."SYS_EXPORT_FULL_02" successfully loaded/unloaded
 ******************************************************************************
 Dump file set for SYS.SYS_EXPORT_FULL_02 is:
-  C:\ORACLEBACKUP\TONGBO_FULL.DMP
-Job "SYS"."SYS_EXPORT_FULL_02" successfully completed at Sat Mar 28 10:23:15 2026 elapsed 0 00:05:33
+  C:\DOANCSDLORACLE\POWER_CORPORATION_SYSTEM\SETUP\ORACLEBACKUP\TONGBO_FULL.DMP
+Job "SYS"."SYS_EXPORT_FULL_02" successfully completed at Sat Apr 11 14:52:49 2026 elapsed 0 00:08:05
