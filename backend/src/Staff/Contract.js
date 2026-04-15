@@ -10,23 +10,40 @@ const send = require('../config/SeenQuery');
 const getBranchLogger = require('../config/logger');
 
 router.get("/contracts", verifyToken, authorization("R_ADMIN", "R_STAFF", "R_MANAGER"), async (req, res) => {
-    const manv = req.user.id;
+
+    const SDT = req.query.SDT;
     let connect;
     try {
-        const query = `
-    SELECT hd.soHD,
-           hd.maKH,
-           kh.tenKH,
-           hd.ngayKy,
-           hd.soDienKe,
-           hd.kwDinhMuc,
-           hd.dongiaKW,
-           hd.isPaid
-    FROM hopdong hd
-    INNER JOIN khachhang kh ON hd.maKH = kh.maKH
+        let query;
+        let params = {};
 
-  
-`;
+        if (SDT) {
+            query = `
+            SELECT hd.SOHD,
+                   hd.MAKH,
+                   kh.TENKH,
+                   hd.NGAYKY,
+                   hd.SODIENKE,
+                   hd.KWDINHMUC,
+                   hd.DONGIAKW
+            FROM hopdong hd
+            INNER JOIN khachhang kh ON hd.MAKH = kh.MAKH
+            WHERE kh.SDT = :SDT
+            `;
+            params = { SDT: SDT };
+        } else {
+            query = `
+            SELECT hd.SOHD,
+                   hd.MAKH,
+                   kh.TENKH,
+                   hd.NGAYKY,
+                   hd.SODIENKE,
+                   hd.KWDINHMUC,
+                   hd.DONGIAKW
+            FROM hopdong hd
+            INNER JOIN khachhang kh ON hd.MAKH = kh.MAKH
+            `;
+        }
 
         const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
 
@@ -34,7 +51,7 @@ router.get("/contracts", verifyToken, authorization("R_ADMIN", "R_STAFF", "R_MAN
 
         const result = await connect.execute(
             query,
-            {},
+            params,
             { outFormat: oracledb.OUT_FORMAT_OBJECT }
         );
         const allcus = result.rows;
@@ -57,17 +74,17 @@ router.get("/contracts", verifyToken, authorization("R_ADMIN", "R_STAFF", "R_MAN
 });
 
 router.post("/contracts", verifyToken, authorization("R_ADMIN", "R_MANAGER", "R_STAFF"), async (req, res) => {
-    const { maKH, soDienKe, kwDinhMuc, dongiaKW } = req.body;
+    const { maKH, soDienKe, kwDinhMuc, dongiaKW, diaChi } = req.body;
     const soHD = ulid();
     const branchLogger = getBranchLogger(req.user.chinhanh);
     try {
         const query = `
 
-   insert into hopdong (soHD,maKH,soDienKe,kwDinhMuc,dongiaKW) values ('${soHD}','${maKH}','${soDienKe}',${kwDinhMuc},${dongiaKW})
+   insert into hopdong (soHD,maKH,soDienKe,kwDinhMuc,dongiaKW,diaChi) values ('${soHD}','${maKH}','${soDienKe}',${kwDinhMuc},${dongiaKW},'${diaChi}')
 `;
 
         await send(query);
-        await branchLogger.insert(`Thêm hợp đồng thành công +${soHD}`, { MaNV: req.user.manv, soHD: soHD, maKH, soDienKe, kwDinhMuc, dongiaKW });
+        await branchLogger.insert(`Thêm hợp đồng thành công +${soHD}`, { MaNV: req.user.manv, soHD: soHD, maKH, soDienKe, kwDinhMuc, dongiaKW, diaChi });
         return res.status(200).json({ success: true, message: "Thêm hợp đồng thành công" });
 
     } catch (error) {
@@ -79,7 +96,7 @@ router.post("/contracts", verifyToken, authorization("R_ADMIN", "R_MANAGER", "R_
 
 });
 router.put("/contracts/:id", verifyToken, authorization("R_ADMIN", "R_MANAGER"), async (req, res) => {
-    const { soDienKe, kwDinhMuc, dongiaKW } = req.body;
+    const { soDienKe, kwDinhMuc, dongiaKW, diaChi } = req.body;
     const soHD = req.params.id;
     const branchLogger = getBranchLogger(req.user.chinhanh);
     try {
@@ -89,7 +106,7 @@ router.put("/contracts/:id", verifyToken, authorization("R_ADMIN", "R_MANAGER"),
         if (soDienKe != null) updateFields.push(`soDienKe=${soDienKe}`);
         if (kwDinhMuc != null) updateFields.push(`kwDinhMuc=${kwDinhMuc}`);
         if (dongiaKW != null) updateFields.push(`dongiaKW=${dongiaKW}`);
-
+        if (diaChi != null) updateFields.push(`diaChi='${diaChi}'`);
 
         if (updateFields.length === 0) {
             return res.status(400).json({ message: "Không có dữ liệu gì để cập nhật!" });
@@ -100,11 +117,11 @@ router.put("/contracts/:id", verifyToken, authorization("R_ADMIN", "R_MANAGER"),
 
 
         await send(query);
-        await branchLogger.update(`Cập nhật hợp đồng thành công +${soHD}`, { MaNV: req.user.manv, soHD: soHD, soDienKe, kwDinhMuc, dongiaKW });
+        await branchLogger.update(`Cập nhật hợp đồng thành công +${soHD}`, { MaNV: req.user.manv, soHD: soHD, soDienKe, kwDinhMuc, dongiaKW, diaChi });
         return res.status(200).json({ success: true, message: "Cập nhật hợp đồng thành công" });
     } catch (error) {
         console.log(error);
-        await branchLogger.error(`Lỗi khi cập nhật hợp đồng +${soHD}`, { MaNV: req.user.manv, soHD: soHD, soDienKe, kwDinhMuc, dongiaKW, error });
+        await branchLogger.error(`Lỗi khi cập nhật hợp đồng +${soHD}`, { MaNV: req.user.manv, soHD: soHD, soDienKe, kwDinhMuc, dongiaKW, diaChi, error });
         return res.status(500).json({ success: false, message: "Cập nhật hợp đồng thất bại" });
     }
 });
@@ -138,7 +155,7 @@ router.get("/contracts/:id", verifyToken, authorization("R_ADMIN", "R_STAFF", "R
                    hd.SODIENKE,
                    hd.KWDINHMUC,
                    hd.DONGIAKW,
-                   hd.ISPAID,
+                   hd.diachi,
                    cn.TENCN,
                    cn.THANHPHO
             FROM hopdong hd

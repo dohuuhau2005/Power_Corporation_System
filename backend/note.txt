@@ -44,8 +44,66 @@ ADMIN
    câu 1
    câu 2
 
+ sau 1 tháng toàn bộ sẽ tự tạo hóa đơn chưa thanh toán ( thêm 1 trang xem hóa đơn chưa thanh toán )
+ thêm 1 trang ngắt điện cho admin nếu hóa đơn đó quá hạn 15 ngày chưa thanh toán
+   1 người có thể có nhiều hợp đồng 
+   1 hợp đồng tương ứng với (1 căn nhà và 1 công tơ điện)
+1 hợp đồng có nhiều hóa đơn điện 
 
-   pool
-   lich su cong tac 
-   send check bất đồng bộ 
-   AI 
+
+
+
+
+nếu lần cuối cùng ghi nhận là 30/4 mà tôi thanh toán 1/5 thì chẳng phải không có gì sao 
+
+nếu lần cuối là 30/12/2025 qua 5/1/ 2026 tôi thanh toán thì sao :)))vậy thì nếu 
+
+
+
+
+
+
+const { soHD, soDienKe } = req.body;
+    const branchLogger = getBranchLogger(req.user.chinhanh);
+
+    try {
+        // Giả sử API nhận vào tháng và năm muốn TÍNH TIỀN (Ví dụ: Tính tiền cho tháng 12/2025)
+        // Nếu không truyền lên thì mặc định là tháng TRƯỚC của tháng hiện tại.
+        const targetMonth = req.body.thang || (new Date().getMonth() === 0 ? 12 : new Date().getMonth());
+        const targetYear = req.body.nam || (new Date().getMonth() === 0 ? new Date().getFullYear() - 1 : new Date().getFullYear());
+
+        // TUYỆT KỸ JAVASCRIPT: Tự động tràn tháng/năm
+        // Trong JS, tháng chạy từ 0-11. 
+        // Nếu sếp truyền new Date(2025, 12, 1) -> JS tự động hiểu là Ngày 01/01/2026! Quá xịn!
+        const cutoffDate = new Date(targetYear, targetMonth, 1); // Điểm chốt chặn: 00:00:00 ngày 1 của tháng TIẾP THEO
+
+        // 2. GỌI MONGODB (Chỉ dùng $lt - Nhỏ hơn)
+        const db = client.db("ElectricCorporation");
+        const collection = db.collection("ElectricMeters");
+
+        const chiSoChotSoList = await collection.find({
+            soDienKe: soDienKe,
+            thoiGian: {
+                $lt: cutoffDate // Lấy TẤT CẢ data cũ hơn 00:00:00 ngày đầu tháng sau
+            }
+            // KHÔNG CẦN $gte (Lớn hơn) luôn! Vì lỡ cả tháng đó cúp điện, nó sẽ tự lôi số cuối tháng trước ra làm số tháng này (Quá đúng logic: xài 0 kW)
+        })
+        .sort({ thoiGian: -1 }) // Sắp xếp lùi: Mới nhất nằm trên cùng
+        .limit(1)               // Lấy đúng 1 thằng chốt sổ
+        .toArray();
+
+        // 3. KIỂM TRA KẾT QUẢ
+        if (chiSoChotSoList.length > 0) {
+            const chiSoChotSo = chiSoChotSoList[0];
+            console.log(`[CHỐT SỔ THÁNG ${targetMonth}/${targetYear}] - Giờ ghi nhận: ${chiSoChotSo.thoiGian}`);
+            console.log(`=> Chỉ số chốt: ${chiSoChotSo.chiSoKwh} kWh`);
+            
+            return res.status(200).json({ success: true, data: chiSoChotSo });
+        } else {
+            return res.status(404).json({ success: false, message: "Lịch sử trắng tinh, chưa từng có data!" });
+        }
+
+    } catch (error) {
+        branchLogger.error("Lỗi khi lấy chỉ số mới nhất: ", error);
+        return res.status(500).json({ success: false, message: "Lỗi Server" });
+    }

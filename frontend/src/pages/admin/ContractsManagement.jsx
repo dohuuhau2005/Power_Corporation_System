@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   getContracts,
+  getContractsByPhone,
   getContractDetail,
   createContract,
   updateContract,
@@ -30,6 +32,7 @@ const emptyPayData = {
 }
 
 export default function ContractsManagement() {
+  const navigate = useNavigate()
   const { user } = useAuthStore()
   const canManage = user?.role === 'R_ADMIN' || user?.role === 'R_MANAGER'
   const canPay = user?.role === 'R_STAFF' || user?.role === 'R_MANAGER' || user?.role === 'R_ADMIN'
@@ -45,12 +48,14 @@ export default function ContractsManagement() {
   const [formData, setFormData] = useState(emptyFormData)
   const [editData, setEditData] = useState(emptyEditData)
   const [payData, setPayData] = useState(emptyPayData)
+  const [searchPhone, setSearchPhone] = useState('')
+  const [isSearchMode, setIsSearchMode] = useState(false)
 
   useEffect(() => {
     fetchData()
   }, [])
 
-  const isPaidContract = (contract) => contract?.ISPAID === 1 || contract?.ISPAID === '1'
+  const isPaidContract = (contract) => contract?.ISPAID === 1 || contract?.ISPAID === '1' || contract?.THANHTOAN === 1 || contract?.THANHTOAN === '1'
 
   const formatDate = (value) => {
     if (!value) return '--'
@@ -72,11 +77,39 @@ export default function ContractsManagement() {
       setContracts(contractsRes.contracts || [])
       setCustomers(customersRes.customers || [])
       setError('')
+      setIsSearchMode(false)
+      setSearchPhone('')
     } catch (err) {
       setError('Không thể tải dữ liệu hợp đồng: ' + (err.response?.data?.message || err.message || 'Lỗi hệ thống'))
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSearchByPhone = async () => {
+    if (!searchPhone.trim()) {
+      setError('Vui lòng nhập số điện thoại')
+      return
+    }
+
+    try {
+      setLoading(true)
+      const response = await getContractsByPhone(searchPhone)
+      setContracts(response.contracts || [])
+      setIsSearchMode(true)
+      setError('')
+    } catch (err) {
+      setError('Không thể tìm kiếm hợp đồng: ' + (err.response?.data?.message || err.message || 'Lỗi hệ thống'))
+      setContracts([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResetSearch = () => {
+    setSearchPhone('')
+    setIsSearchMode(false)
+    fetchData()
   }
 
   const resetCreateForm = () => {
@@ -90,6 +123,13 @@ export default function ContractsManagement() {
     setSelectedContract(null)
     setEditData(emptyEditData)
     setPayData(emptyPayData)
+  }
+
+  const handleViewBills = () => {
+    if (!selectedContract) return
+    closeDetailModal()
+    const basePath = user?.role === 'R_ADMIN' ? '/admin/bills' : '/employee/bills'
+    navigate(basePath, { state: { soHD: selectedContract.SOHD } })
   }
 
   const handleAddContract = async () => {
@@ -246,12 +286,7 @@ export default function ContractsManagement() {
     { key: 'NGAYKY', label: 'Ngày Ký', render: (value) => formatDate(value) },
     { key: 'SODIENKE', label: 'Số Điện Kế' },
     { key: 'KWDINHMUC', label: 'Định Mức kWh' },
-    { key: 'DONGIAKW', label: 'Đơn Giá/kWh', render: (value) => formatCurrency(value) },
-    {
-      key: 'ISPAID',
-      label: 'Trạng Thái',
-      render: (value) => value === 1 || value === '1' ? '✓ Đã Thanh Toán' : '✕ Chưa Thanh Toán'
-    }
+    { key: 'DONGIAKW', label: 'Đơn Giá/kWh', render: (value) => formatCurrency(value) }
   ]
 
   const actions = [
@@ -284,17 +319,40 @@ export default function ContractsManagement() {
           <h2>Quản Lý Hợp Đồng</h2>
           <p className="management-subtitle">Theo dõi, cập nhật và thanh toán hợp đồng điện tại một nơi.</p>
         </div>
-        {canManage && (
-          <button
-            className="btn-add"
-            onClick={() => {
-              setShowForm(!showForm)
-              setError('')
-            }}
-          >
-            {showForm ? 'Đóng Biểu Mẫu' : 'Tạo Hợp Đồng'}
+        <div className="header-actions">
+          {canManage && (
+            <button
+              className="btn-add"
+              onClick={() => {
+                setShowForm(!showForm)
+                setError('')
+              }}
+            >
+              {showForm ? 'Đóng Biểu Mẫu' : 'Tạo Hợp Đồng'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="search-box">
+        <div className="search-input-group">
+          <input
+            type="text"
+            value={searchPhone}
+            onChange={(e) => setSearchPhone(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSearchByPhone()}
+            placeholder="Nhập số điện thoại khách hàng"
+            className="search-input"
+          />
+          <button onClick={handleSearchByPhone} className="btn-search">
+            Tìm Kiếm
           </button>
-        )}
+          {isSearchMode && (
+            <button onClick={handleResetSearch} className="btn-reset">
+              Xem Tất Cả
+            </button>
+          )}
+        </div>
       </div>
 
       {showForm && canManage && (
@@ -384,12 +442,7 @@ export default function ContractsManagement() {
                 <span className="label">Đơn Giá KW:</span>
                 <span className="value">{formatCurrency(selectedContract.DONGIAKW)}</span>
               </div>
-              <div className="detail-row">
-                <span className="label">Trạng Thái Thanh Toán:</span>
-                <span className={`value ${isPaidContract(selectedContract) ? 'paid' : 'unpaid'}`}>
-                  {isPaidContract(selectedContract) ? '✓ Đã Thanh Toán' : '✕ Chưa Thanh Toán'}
-                </span>
-              </div>
+
               {selectedContract.TENCN && (
                 <div className="detail-row">
                   <span className="label">Chi Nhánh:</span>
@@ -419,6 +472,9 @@ export default function ContractsManagement() {
               )}
             </div>
             <div className="modal-footer">
+              <button onClick={handleViewBills} className="btn-view-bills">
+                Xem Hóa Đơn
+              </button>
               {canPay && !isPaidContract(selectedContract) && (
                 <button onClick={handlePayContract} className="btn-pay">
                   Thanh Toán

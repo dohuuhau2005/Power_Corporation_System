@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   getContracts,
+  getContractsByPhone,
   getContractDetail,
   createContract,
   updateContract,
@@ -13,9 +15,11 @@ import Table from '../../components/Table'
 import './ContractsManagement.css'
 
 export default function ContractsManagement() {
+  const navigate = useNavigate()
   const { user } = useAuthStore()
   const canAdd = user?.role === 'R_STAFF' || user?.role === 'R_MANAGER' || user?.role === 'R_ADMIN'
   const canEdit = user?.role === 'R_MANAGER' || user?.role === 'R_ADMIN'
+  const canPay = user?.role === 'R_STAFF' || user?.role === 'R_MANAGER' || user?.role === 'R_ADMIN'
 
   const [contracts, setContracts] = useState([])
   const [customers, setCustomers] = useState([])
@@ -36,6 +40,8 @@ export default function ContractsManagement() {
     kwDinhMuc: '',
     dongiaKW: ''
   })
+  const [searchPhone, setSearchPhone] = useState('')
+  const [isSearchMode, setIsSearchMode] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -47,16 +53,43 @@ export default function ContractsManagement() {
       const [contractsRes, customersRes] = await Promise.all([
         getContracts(),
         getCustomers(),
-
       ])
       setContracts(contractsRes.contracts || [])
       setCustomers(customersRes.customers || [])
+      setError('')
+      setIsSearchMode(false)
+      setSearchPhone('')
     } catch (err) {
-      setError('Không thể tải dữ liệu')
-      console.error(err)
+      setError('Không thể tải dữ liệu: ' + (err.response?.data?.message || err.message || 'Lỗi hệ thống'))
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSearchByPhone = async () => {
+    if (!searchPhone.trim()) {
+      setError('Vui lòng nhập số điện thoại')
+      return
+    }
+
+    try {
+      setLoading(true)
+      const response = await getContractsByPhone(searchPhone)
+      setContracts(response.contracts || [])
+      setIsSearchMode(true)
+      setError('')
+    } catch (err) {
+      setError('Không thể tìm kiếm hợp đồng: ' + (err.response?.data?.message || err.message || 'Lỗi hệ thống'))
+      setContracts([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResetSearch = () => {
+    setSearchPhone('')
+    setIsSearchMode(false)
+    fetchData()
   }
 
   const handleAddContract = async () => {
@@ -164,6 +197,13 @@ export default function ContractsManagement() {
     }
   }
 
+  const handleViewBills = () => {
+    if (!selectedContract) return
+    setShowDetail(false)
+    setSelectedContract(null)
+    navigate('/employee/bills', { state: { soHD: selectedContract.SOHD } })
+  }
+
   const handlePayContract = async () => {
     if (!selectedContract) return
 
@@ -225,15 +265,41 @@ export default function ContractsManagement() {
   return (
     <div className="contracts-management">
       <div className="management-header">
-        <h2>Quản Lý Hợp Đồng</h2>
-        {canAdd && (
-          <button
-            className="btn-add"
-            onClick={() => setShowForm(!showForm)}
-          >
-            + Tạo Hợp Đồng
+        <div>
+          <h2>Quản Lý Hợp Đồng</h2>
+          <p className="management-subtitle">Theo dõi, cập nhật và thanh toán hợp đồng điện tại một nơi.</p>
+        </div>
+        <div className="header-actions">
+          {canAdd && (
+            <button
+              className="btn-add"
+              onClick={() => setShowForm(!showForm)}
+            >
+              + Tạo Hợp Đồng
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="search-box">
+        <div className="search-input-group">
+          <input
+            type="text"
+            value={searchPhone}
+            onChange={(e) => setSearchPhone(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSearchByPhone()}
+            placeholder="Nhập số điện thoại khách hàng"
+            className="search-input"
+          />
+          <button onClick={handleSearchByPhone} className="btn-search">
+            Tìm Kiếm
           </button>
-        )}
+          {isSearchMode && (
+            <button onClick={handleResetSearch} className="btn-reset">
+              Xem Tất Cả
+            </button>
+          )}
+        </div>
       </div>
 
       {showForm && canAdd && (
@@ -339,6 +405,9 @@ export default function ContractsManagement() {
               )}
             </div>
             <div className="modal-footer">
+              <button onClick={handleViewBills} className="btn-view-bills">
+                Xem Hóa Đơn
+              </button>
               {(!selectedContract.ISPAID || selectedContract.ISPAID === 0 || selectedContract.ISPAID === '0') && (
                 <button onClick={handlePayContract} className="btn-pay">
                   💳 Thanh Toán Hợp Đồng

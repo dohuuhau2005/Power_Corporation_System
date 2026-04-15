@@ -1,56 +1,49 @@
 import { useEffect, useState } from 'react'
-import { getBills, createBill, getBillDetail } from '../../services/api'
+import { useLocation } from 'react-router-dom'
+import { getBillsByContract, getBillDetail, payBill } from '../../services/api'
 import { useAuthStore } from '../../store/authStore'
-// PERMISSIONS: R_STAFF can create invoices only
 import Table from '../../components/Table'
 import './BillsManagement.css'
 
 export default function BillsManagement() {
+  const location = useLocation()
   const { user } = useAuthStore()
+  const soHDFromState = location.state?.soHD
+  
   const [bills, setBills] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [showForm, setShowForm] = useState(false)
   const [showDetail, setShowDetail] = useState(false)
   const [selectedBill, setSelectedBill] = useState(null)
-  const [formData, setFormData] = useState({
-    thanhpho: user?.ThanhPho || 'TP1',
-    soHD: '',
-    maNV: user?.id || '',
-    soTien: ''
-  })
+  const [currentSoHD, setCurrentSoHD] = useState(soHDFromState || '')
+  const [showPayConfirm, setShowPayConfirm] = useState(false)
+  const [selectedBillsForPay, setSelectedBillsForPay] = useState([])
 
   useEffect(() => {
-    fetchBills()
-  }, [])
-
-  const fetchBills = async () => {
-    try {
-      setLoading(true)
-      const response = await getBills(user?.id)
-      setBills(response.bills || [])
-    } catch (err) {
-      setError('Không thể tải dữ liệu hóa đơn')
-      console.error(err)
-    } finally {
+    if (soHDFromState) {
+      fetchBills(soHDFromState)
+    } else {
       setLoading(false)
     }
-  }
+  }, [soHDFromState])
 
-  const handleCreate = async () => {
+  const fetchBills = async (soHD) => {
     try {
-      await createBill(formData)
-      setFormData({
-        thanhpho: user?.ThanhPho || 'TP1',
-        soHD: '',
-        maNV: user?.id || '',
-        soTien: ''
-      })
-      setShowForm(false)
-      alert('Tạo hóa đơn thành công!')
-      window.location.reload()
+      setLoading(true)
+      const response = await getBillsByContract(soHD)
+      // Normalize column names: thanhToan → THANHTOAN
+      const normalizedBills = (response.bills || []).map(bill => ({
+        ...bill,
+        THANHTOAN: bill.THANHTOAN !== undefined ? bill.THANHTOAN : bill.thanhToan
+      }))
+      setBills(normalizedBills)
+      setCurrentSoHD(soHD)
+      setError('')
     } catch (err) {
-      setError('Không thể tạo hóa đơn: ' + (err.response?.data?.message || err.message))
+      setError('Không thể tải dữ liệu hóa đơn: ' + (err.response?.data?.message || err.message || 'Lỗi hệ thống'))
+      setBills([])
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -60,8 +53,56 @@ export default function BillsManagement() {
       setSelectedBill(response.bill)
       setShowDetail(true)
     } catch (err) {
-      setError('Không thể tải chi tiết: ' + err.message)
+      setError('Không thể tải chi tiết: ' + (err.response?.data?.message || err.message || 'Lỗi hệ thống'))
     }
+  }
+
+  const handlePayBill = async (soHDN) => {
+    if (!window.confirm('Bạn có chắc chắn muốn thanh toán hóa đơn này?')) {
+      return
+    }
+
+    try {
+      await payBill(soHDN)
+      await fetchBills(currentSoHD)
+      setShowDetail(false)
+      setSelectedBill(null)
+      alert('Thanh toán hóa đơn thành công!')
+    } catch (err) {
+      setError('Không thể thanh toán hóa đơn: ' + (err.response?.data?.message || err.message || 'Lỗi hệ thống'))
+    }
+  }
+
+  const handleBulkPay = () => {
+    const unpaidBills = bills.filter(bill => bill.THANHTOAN === 0 || bill.THANHTOAN === '0')
+    if (unpaidBills.length === 0) {
+      setError('Không có hóa đơn nào chưa thanh toán')
+      return
+    }
+    setSelectedBillsForPay(unpaidBills.map(b => b.SOHDN))
+    setShowPayConfirm(true)
+  }
+
+  const confirmBulkPay = async () => {
+    try {
+      await Promise.all(selectedBillsForPay.map(soHDN => payBill(soHDN)))
+      await fetchBills(currentSoHD)
+      setShowPayConfirm(false)
+      setSelectedBillsForPay([])
+      alert('Thanh toán tất cả hóa đơn thành công!')
+    } catch (err) {
+      setError('Lỗi khi thanh toán: ' + (err.response?.data?.message || err.message || 'Lỗi hệ thống'))
+    }
+  }
+
+  const formatCurrency = (value) => {
+    if (value === null || value === undefined || value === '') return '--'
+    return `${Number.parseInt(value, 10).toLocaleString('vi-VN')} VNĐ`
+  }
+
+  const getPaymentStatus = (value) => {
+    const status = parseInt(value, 10)
+    return status === 1 ? '✓ Đã Thanh Toán' : '✕ Chưa Thanh Toán'
   }
 
   const columns = [
@@ -69,47 +110,63 @@ export default function BillsManagement() {
     { key: 'THANG', label: 'Tháng' },
     { key: 'NAM', label: 'Năm' },
     { key: 'SOHD', label: 'Số HD' },
-    { key: 'SOTIEN', label: 'Số Tiền' }
+    { key: 'SOTIEN', label: 'Số Tiền', render: (value) => formatCurrency(value) },
+    { 
+      key: 'THANHTOAN', 
+      label: 'Trạng Thái', 
+      render: (value) => getPaymentStatus(value)
+    }
   ]
 
-  if (loading) return <div className="loading">Đang tải...</div>
-  if (error) return <div className="error">{error}</div>
+  const actions = [
+    {
+      label: 'Xem Chi Tiết',
+      onClick: (row) => handleViewDetail(row)
+    }
+  ]
 
-  const canCreate = user?.role === 'R_STAFF' || user?.role === 'R_MANAGER' || user?.role === 'R_ADMIN'
+  if (loading) return <div className="loading">Đang tải dữ liệu hóa đơn...</div>
+
+  if (!currentSoHD) {
+    return (
+      <div className="bills-management">
+        <div className="info-message">
+          📋 Vui lòng chọn một hợp đồng từ trang Quản Lý Hợp Đồng để xem danh sách hóa đơn
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="bills-management">
       <div className="management-header">
-        <h2>Quản Lý Hóa Đơn</h2>
-
+        <div>
+          <h2>Quản Lý Hóa Đơn</h2>
+          <p className="management-subtitle">Hợp Đồng: {currentSoHD}</p>
+        </div>
+        <button onClick={handleBulkPay} className="btn-bulk-pay">
+          Thanh Toán Tất Cả
+        </button>
       </div>
 
-      {showForm && canCreate && (
-        <div className="form-box">
-          <h3>Tạo Hóa Đơn Mới</h3>
-          <div className="form-row">
-            <div className="form-group">
-              <label>Số Hợp Đồng</label>
-              <input
-                type="text"
-                value={formData.soHD}
-                onChange={(e) => setFormData({ ...formData, soHD: e.target.value })}
-                placeholder="Nhập số hợp đồng"
-              />
+      {showPayConfirm && (
+        <div className="detail-modal">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>Xác Nhận Thanh Toán</h3>
+              <button className="close-btn" onClick={() => setShowPayConfirm(false)}>×</button>
             </div>
-            <div className="form-group">
-              <label>Số Tiền (VNĐ)</label>
-              <input
-                type="number"
-                value={formData.soTien}
-                onChange={(e) => setFormData({ ...formData, soTien: e.target.value })}
-                placeholder="Nhập số tiền"
-              />
+            <div className="modal-body">
+              <p>Bạn có chắc chắn muốn thanh toán {selectedBillsForPay.length} hóa đơn chưa thanh toán?</p>
             </div>
-          </div>
-          <div className="form-actions">
-            <button onClick={handleCreate} className="btn-save">Tạo Hóa Đơn</button>
-            <button onClick={() => setShowForm(false)} className="btn-cancel">Hủy</button>
+            <div className="modal-footer">
+              <button onClick={() => setShowPayConfirm(false)} className="btn-cancel">
+                Hủy
+              </button>
+              <button onClick={confirmBulkPay} className="btn-confirm">
+                Xác Nhận
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -150,27 +207,58 @@ export default function BillsManagement() {
                   <span className="value">{selectedBill.KWDINHMUC} kWh</span>
                 </div>
               )}
+              {selectedBill.CHISOMOI && (
+                <div className="detail-row">
+                  <span className="label">Chỉ Số Mới:</span>
+                  <span className="value">{selectedBill.CHISOMOI}</span>
+                </div>
+              )}
+              {selectedBill.CHISOCU && (
+                <div className="detail-row">
+                  <span className="label">Chỉ Số Cũ:</span>
+                  <span className="value">{selectedBill.CHISOCU}</span>
+                </div>
+              )}
+              {selectedBill.KWTHUCTE && (
+                <div className="detail-row">
+                  <span className="label">kWh Thực Tế:</span>
+                  <span className="value">{selectedBill.KWTHUCTE} kWh</span>
+                </div>
+              )}
               <div className="detail-row">
                 <span className="label">Số Tiền:</span>
                 <span className="value" style={{ color: '#27ae60', fontWeight: 'bold' }}>
-                  {parseInt(selectedBill.SOTIEN).toLocaleString('vi-VN')} VNĐ
+                  {formatCurrency(selectedBill.SOTIEN)}
                 </span>
               </div>
               <div className="detail-row">
-                <span className="label">Nhân Viên:</span>
-                <span className="value">{selectedBill.MANV}</span>
+                <span className="label">Trạng Thái Thanh Toán:</span>
+                <span className={`value ${selectedBill.THANHTOAN === 1 || selectedBill.THANHTOAN === '1' ? 'paid' : 'unpaid'}`}>
+                  {getPaymentStatus(selectedBill.THANHTOAN)}
+                </span>
               </div>
+              {selectedBill.MANV && (
+                <div className="detail-row">
+                  <span className="label">Nhân Viên:</span>
+                  <span className="value">{selectedBill.MANV}</span>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              {(selectedBill.THANHTOAN === 0 || selectedBill.THANHTOAN === '0') && (
+                <button onClick={() => handlePayBill(selectedBill.SOHDN)} className="btn-pay">
+                  Thanh Toán
+                </button>
+              )}
+              <button onClick={() => { setShowDetail(false); setSelectedBill(null) }} className="btn-close">
+                Đóng
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      <Table columns={columns} data={bills} actions={[
-        {
-          label: 'Xem Chi Tiết',
-          onClick: (row) => handleViewDetail(row)
-        }
-      ]} />
+      <Table columns={columns} data={bills} actions={actions} />
     </div>
   )
 }

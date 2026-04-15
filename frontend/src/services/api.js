@@ -114,6 +114,11 @@ export const getContracts = async () => {
   return response.data
 }
 
+export const getContractsByPhone = async (phone) => {
+  const response = await api.get('/employee/contracts', { params: { SDT: phone } })
+  return response.data
+}
+
 export const getContractDetail = async (id) => {
   const response = await api.get(`/employee/contracts/${id}`)
   return response.data
@@ -141,6 +146,16 @@ export const payContract = async (id, data) => {
 
 export const getBills = async (maNV) => {
   const response = await api.get('/employee/bills', { params: { maNV } })
+  return response.data
+}
+
+export const getBillsByContract = async (soHD) => {
+  const response = await api.get('/employee/bills', { params: { soHD } })
+  return response.data
+}
+
+export const payBill = async (soHDN) => {
+  const response = await api.put(`/employee/bills/pay/${soHDN}`)
   return response.data
 }
 

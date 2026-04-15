@@ -61,11 +61,11 @@ const startWorker = async () => {
 
                     // Chạy lệnh SQL và Auto Commit luôn
                     await connect.execute(rawSQL, [], { autoCommit: true });
-
+                    // nếu có lỗi ở đây thì sẽ nhảy thẳng vào catch = > thư vẫn còn nguyên trong queue
 
                     console.log(" Đã Insert/Update thành công xuống Database Chi nhánh!");
 
-                    // 5. CHỐT ĐƠN VỚI RABBITMQ (Quan trọng!)
+                    // 5. CHỐT ĐƠN VỚI RABBITMQ 
 
                     channel.ack(msg);
                     console.log(" Xong quy trình, tiếp tục hóng...\n");
@@ -73,22 +73,33 @@ const startWorker = async () => {
                 } catch (err) {
 
                     console.error("❌ Lỗi trong quá trình xử lý tin nhắn:", err);
-                    channel.nack(msg, false, false);
+                    const errMsg = err.message.toLowerCase();
+                    const isConnectionError = errMsg.includes('njs-') || errMsg.includes('connection') || errMsg.includes('pool') || errMsg.includes('timeout');
+                    if (isConnectionError) {
+                        console.error("⚠️ Lỗi kết nối Oracle nghiêm trọng! Đang cố gắng giữ lại tin nhắn để Tổng Bộ có thể gửi lại sau...");
+                        channel.nack(msg, false, true); // Giữ lại tin nhắn trong queue 
+                        await new Promise(resolve => setTimeout(resolve, 5000));
+                    }
+
+                    else {
+                        channel.nack(msg, false, false);
 
 
-                    // Khai báo một gói tin chứa chi tiết lỗi
-                    const errorReport = {
-                        status: 'FAILED',
-                        reason: err.message,
-                        time: new Date().toISOString(),
-                        originalData: msg.content.toString() // Trả lại luôn cái xác chết để Tổng bộ khám nghiệm
-                    };
+                        // Khai báo một gói tin chứa chi tiết lỗi
+                        const errorReport = {
+                            status: 'FAILED',
+                            reason: err.message,
+                            time: new Date().toISOString(),
+                            originalData: msg.content.toString() // Trả lại luôn cái xác chết để Tổng bộ khám nghiệm
+                        };
 
-                    // Bắn thẳng gói tin lỗi này vào một Queue chuyên chứa rác/lỗi (ví dụ: 'QUEUE_RETURN_ERROR')
-                    const ERROR_QUEUE = 'QUEUE_RETURN_ERROR';
-                    channel.sendToQueue(ERROR_QUEUE, Buffer.from(JSON.stringify(errorReport)), {
-                        persistent: true // Đảm bảo tin nhắn lỗi không bị mất nếu sập server
-                    });
+                        // Bắn thẳng gói tin lỗi này vào một Queue chuyên chứa rác/lỗi (ví dụ: 'QUEUE_RETURN_ERROR')
+                        const ERROR_QUEUE = 'QUEUE_RETURN_ERROR';
+                        channel.sendToQueue(ERROR_QUEUE, Buffer.from(JSON.stringify(errorReport)), {
+                            persistent: true // Đảm bảo tin nhắn lỗi không bị mất nếu sập server
+                        });
+                    }
+
 
                 } finally {
                     if (connect) {
