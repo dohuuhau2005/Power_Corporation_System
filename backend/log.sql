@@ -1100,7 +1100,7 @@ BEGIN
 END;
 
 
-in
+
 
 
 
@@ -1203,3 +1203,9 @@ update hoadon set thanhToan = 1 where soHD = '01KN98GS8JFF7MBVJ3BXQ25145';
 commit;
 select * from chinhanh;
 select * from khachhang;
+select * from hopdong;
+select * from hoadon;
+delete from hoadon
+UPDATE hopdong 
+SET SODIENKE = 'ABCD', dongiaKW = 3500 
+WHERE soHD = '01KN98GS8JFF7MBVJ3BXQ25145';

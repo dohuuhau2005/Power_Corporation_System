@@ -9,7 +9,7 @@ export default function BillsManagement() {
   const location = useLocation()
   const { user } = useAuthStore()
   const soHDFromState = location.state?.soHD
-  
+
   const [bills, setBills] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -73,15 +73,15 @@ export default function BillsManagement() {
     }
   }
 
-  const handleBulkPay = () => {
-    const unpaidBills = bills.filter(bill => bill.THANHTOAN === 0 || bill.THANHTOAN === '0')
-    if (unpaidBills.length === 0) {
-      setError('Không có hóa đơn nào chưa thanh toán')
-      return
-    }
-    setSelectedBillsForPay(unpaidBills.map(b => b.SOHDN))
-    setShowPayConfirm(true)
-  }
+  // const handleBulkPay = () => {
+  //   const unpaidBills = bills.filter(bill => bill.THANHTOAN === 0 || bill.THANHTOAN === '0')
+  //   if (unpaidBills.length === 0) {
+  //     setError('Không có hóa đơn nào chưa thanh toán')
+  //     return
+  //   }
+  //   setSelectedBillsForPay(unpaidBills.map(b => b.SOHDN))
+  //   setShowPayConfirm(true)
+  // }
 
   const confirmBulkPay = async () => {
     try {
@@ -111,9 +111,9 @@ export default function BillsManagement() {
     { key: 'NAM', label: 'Năm' },
     { key: 'SOHD', label: 'Số HD' },
     { key: 'SOTIEN', label: 'Số Tiền', render: (value) => formatCurrency(value) },
-    { 
-      key: 'THANHTOAN', 
-      label: 'Trạng Thái', 
+    {
+      key: 'THANHTOAN',
+      label: 'Trạng Thái',
       render: (value) => getPaymentStatus(value)
     }
   ]
@@ -144,9 +144,9 @@ export default function BillsManagement() {
           <h2>Quản Lý Hóa Đơn</h2>
           <p className="management-subtitle">Hợp Đồng: {currentSoHD}</p>
         </div>
-        <button onClick={handleBulkPay} className="btn-bulk-pay">
+        {/* <button onClick={handleBulkPay} className="btn-bulk-pay">
           Thanh Toán Tất Cả
-        </button>
+        </button> */}
       </div>
 
       {showPayConfirm && (

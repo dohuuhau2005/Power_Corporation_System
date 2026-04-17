@@ -155,7 +155,7 @@ router.get("/contracts/:id", verifyToken, authorization("R_ADMIN", "R_STAFF", "R
                    hd.SODIENKE,
                    hd.KWDINHMUC,
                    hd.DONGIAKW,
-                   hd.diachi,
+                   hd.DIACHI,
                    cn.TENCN,
                    cn.THANHPHO
             FROM hopdong hd

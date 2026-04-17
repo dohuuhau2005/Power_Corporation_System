@@ -455,31 +455,17 @@ export default function ContractsManagement() {
                   <span className="value">{selectedContract.THANHPHO}</span>
                 </div>
               )}
+              <div className="detail-row">
+                <span className="label">Địa Chỉ:</span>
+                <span className="value">{selectedContract.DIACHI || '--'}</span>
+              </div>
 
-              {canPay && !isPaidContract(selectedContract) && (
-                <div className="payment-panel">
-                  <h4>Thanh Toán Hợp Đồng</h4>
-                  <div className="form-group">
-                    <label>Số Tiền Thanh Toán</label>
-                    <input
-                      type="number"
-                      value={payData.soTien}
-                      onChange={(e) => setPayData({ soTien: e.target.value })}
-                      placeholder="Nhập số tiền cần thu"
-                    />
-                  </div>
-                </div>
-              )}
             </div>
             <div className="modal-footer">
               <button onClick={handleViewBills} className="btn-view-bills">
                 Xem Hóa Đơn
               </button>
-              {canPay && !isPaidContract(selectedContract) && (
-                <button onClick={handlePayContract} className="btn-pay">
-                  Thanh Toán
-                </button>
-              )}
+
               {canManage && (
                 <button onClick={handleEdit} className="btn-edit">
                   Chỉnh Sửa

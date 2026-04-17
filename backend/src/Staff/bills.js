@@ -9,6 +9,7 @@ const DecryptAES = require('../config/DecryptAES');
 const send = require('../config/SeenQuery');
 const getBranchLogger = require('../config/logger');
 const client = require('../config/MongoDB');
+//NÀY LÀM MẪU TEST THÔI
 router.post("/bills", verifyToken, authorization("R_ADMIN", "R_STAFF", "R_MANAGER"), async (req, res) => {
     const { soHD, soDienKe } = req.body;
     const branchLogger = getBranchLogger(req.user.chinhanh);
