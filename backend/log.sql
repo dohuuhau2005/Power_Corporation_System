@@ -1207,5 +1207,29 @@ select * from hopdong;
 select * from hoadon;
 delete from hoadon
 UPDATE hopdong 
-SET SODIENKE = 'ABCD', dongiaKW = 3500 
+SET DIACHI = '123 Kha Van Can'
 WHERE soHD = '01KN98GS8JFF7MBVJ3BXQ25145';
+
+
+-- 1. Chui vào nhà Tổng Bộ và cấp sổ đỏ
+ALTER SESSION SET CONTAINER = TongBo;
+CREATE OR REPLACE DIRECTORY backup_dir AS '/opt/oracle/oradata/backup';
+GRANT READ, WRITE ON DIRECTORY backup_dir TO sys;
+expdp system/123456@localhost:1521/TongBo directory=backup_dir dumpfile=TongBo_Full_Backup.dmp logfile=TongBo_Full_Backup.log full=y
+docker cp oracle_21c_xe:/opt/oracle/oradata/backup/TongBo_Full_Backup.dmp C:\Electric_Corporation\Power_Corporation_System\setup\oracleBackup
+docker cp oracle_21c_xe:/opt/oracle/oradata/backup/TongBo_Full_Backup.log C:\Electric_Corporation\Power_Corporation_System\setup\oracleBackup
+
+-- 2. Chui vào nhà Chi nhánh 1 (TP1) và cấp sổ đỏ
+ALTER SESSION SET CONTAINER = TP1;
+CREATE OR REPLACE DIRECTORY backup_dir AS '/opt/oracle/oradata/backup';
+GRANT READ, WRITE ON DIRECTORY backup_dir TO sys;
+expdp system/123456@localhost:1521/TP1 directory=backup_dir dumpfile=TP1_Full_Backup.dmp logfile=TP1_Full_Backup.log full=y-- 3. Chui vào nhà Chi nhánh 2 (TP2) và cấp sổ đỏ
+docker cp oracle_21c_xe:/opt/oracle/oradata/backup/TP1_Full_Backup.dmp C:\Electric_Corporation\Power_Corporation_System\setup\oracleBackup
+docker cp oracle_21c_xe:/opt/oracle/oradata/backup/TP1_Full_Backup.log C:\Electric_Corporation\Power_Corporation_System\setup\oracleBackup
+
+ALTER SESSION SET CONTAINER = TP2;
+CREATE OR REPLACE DIRECTORY backup_dir AS '/opt/oracle/oradata/backup';
+GRANT READ, WRITE ON DIRECTORY backup_dir TO sys;
+expdp system/123456@localhost:1521/TP2 directory=backup_dir dumpfile=TP2_Full_Backup.dmp logfile=TP2_Full_Backup.log full=y
+docker cp oracle_21c_xe:/opt/oracle/oradata/backup/TP2_Full_Backup.dmp C:\Electric_Corporation\Power_Corporation_System\setup\oracleBackup\
+docker cp oracle_21c_xe:/opt/oracle/oradata/backup/TP2_Full_Backup.log C:\Electric_Corporation\Power_Corporation_System\setup\oracleBackup\
