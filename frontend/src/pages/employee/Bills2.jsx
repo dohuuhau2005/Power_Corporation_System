@@ -49,11 +49,21 @@ export default function BillsOverRange() {
         }
     }
 
+    const formatCurrency = (value) => {
+        if (value === null || value === undefined || value === '') return '--'
+        return `${Number.parseInt(value, 10).toLocaleString('vi-VN')} VNĐ`
+    }
+
+    const getPaymentStatus = (value) => {
+        const status = parseInt(value, 10)
+        return status === 1 ? '✓ Đã Thanh Toán' : '✕ Chưa Thanh Toán'
+    }
+
     const columns = [
         { key: 'SOHDN', label: 'Số HĐN' },
         { key: 'MAKH', label: 'Mã Khách Hàng' },
         { key: 'KWDINHMUC', label: 'Khối Lượng Định Mức' },
-        { key: 'KWSUDUNG', label: 'Khối Lượng Sử Dụng' },
+        { key: 'KWTHUCTE', label: 'Khối Lượng Sử Dụng' },
 
     ]
 
@@ -101,22 +111,52 @@ export default function BillsOverRange() {
                                     <span className="value">{selectedBill.SODIENKE}</span>
                                 </div>
                             )}
-                            {selectedBill.KWDINHMUC && (
+                            <div className="detail-row">
+                                <span className="label">Định Mức:</span>
+                                <span className="value">
+                                    {(selectedBill.KWDINHMUC === 0 || selectedBill.KWDINHMUC === '0' || selectedBill.KWDINHMUC)
+                                        ? `${selectedBill.KWDINHMUC} kWh`
+                                        : '--'}
+                                </span>
+                            </div>
+                            {selectedBill.CHISOMOI && (
                                 <div className="detail-row">
-                                    <span className="label">Định Mức:</span>
-                                    <span className="value">{selectedBill.KWDINHMUC} kWh</span>
+                                    <span className="label">Chỉ Số Mới:</span>
+                                    <span className="value">{selectedBill.CHISOMOI}</span>
+                                </div>
+                            )}
+                            <div className="detail-row">
+                                <span className="label">Chỉ Số Cũ:</span>
+                                <span className="value">
+                                    {(selectedBill.CHISOCU === 0 || selectedBill.CHISOCU === '0' || selectedBill.CHISOCU)
+                                        ? selectedBill.CHISOCU
+                                        : '--'}
+                                </span>
+                            </div>
+                            {selectedBill.KWTHUCTE && (
+                                <div className="detail-row">
+                                    <span className="label">kWh Thực Tế:</span>
+                                    <span className="value">{selectedBill.KWTHUCTE} kWh</span>
                                 </div>
                             )}
                             <div className="detail-row">
                                 <span className="label">Số Tiền:</span>
                                 <span className="value" style={{ color: '#27ae60', fontWeight: 'bold' }}>
-                                    {parseInt(selectedBill.SOTIEN).toLocaleString('vi-VN')} VNĐ
+                                    {formatCurrency(selectedBill.SOTIEN)}
                                 </span>
                             </div>
                             <div className="detail-row">
-                                <span className="label">Nhân Viên:</span>
-                                <span className="value">{selectedBill.MANV}</span>
+                                <span className="label">Trạng Thái Thanh Toán:</span>
+                                <span className={`value ${selectedBill.THANHTOAN === 1 || selectedBill.THANHTOAN === '1' ? 'paid' : 'unpaid'}`}>
+                                    {getPaymentStatus(selectedBill.THANHTOAN)}
+                                </span>
                             </div>
+                            {selectedBill.MANV && (
+                                <div className="detail-row">
+                                    <span className="label">Nhân Viên:</span>
+                                    <span className="value">{selectedBill.MANV}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

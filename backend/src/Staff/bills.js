@@ -192,7 +192,7 @@ router.put("/bills/pay/:id", verifyToken, authorization("R_ADMIN", "R_STAFF", "R
     try {
         const query = `
             UPDATE hoadon
-            SET thanhToan = 1
+            SET thanhToan = 1, MANV='${req.user.id}'
             WHERE soHDN = '${soHDN}'
         `;
         await send(query);

@@ -36,12 +36,12 @@ router.get('/cau2', verifyToken, async (req, res) => {
 SELECT 
     hoadon.soHDN,
     hopdong.maKH,
-    hopdong.kwDinhMuc,
-    (hoadon.soTien / hopdong.donGiaKW) AS kwSuDung
+    hoadon.kwDinhMuc,
+    hoadon.kwThucTe
 FROM hoadon
 JOIN hopdong ON TRIM(hopdong.soHD) = TRIM(hoadon.soHD)
 WHERE hopdong.donGiaKW > 0 
-  AND (hoadon.soTien / hopdong.donGiaKW) > hopdong.kwDinhMuc
+  AND hoadon.kwThucTe > hoadon.kwDinhMuc
   `;
     let connect;
     try {

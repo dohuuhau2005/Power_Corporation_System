@@ -201,24 +201,28 @@ export default function BillsManagement() {
                   <span className="value">{selectedBill.SODIENKE}</span>
                 </div>
               )}
-              {selectedBill.KWDINHMUC && (
-                <div className="detail-row">
-                  <span className="label">Định Mức:</span>
-                  <span className="value">{selectedBill.KWDINHMUC} kWh</span>
-                </div>
-              )}
+              <div className="detail-row">
+                <span className="label">Định Mức:</span>
+                <span className="value">
+                  {(selectedBill.KWDINHMUC === 0 || selectedBill.KWDINHMUC === '0' || selectedBill.KWDINHMUC)
+                    ? `${selectedBill.KWDINHMUC} kWh`
+                    : '--'}
+                </span>
+              </div>
               {selectedBill.CHISOMOI && (
                 <div className="detail-row">
                   <span className="label">Chỉ Số Mới:</span>
                   <span className="value">{selectedBill.CHISOMOI}</span>
                 </div>
               )}
-              {selectedBill.CHISOCU && (
-                <div className="detail-row">
-                  <span className="label">Chỉ Số Cũ:</span>
-                  <span className="value">{selectedBill.CHISOCU}</span>
-                </div>
-              )}
+              <div className="detail-row">
+                <span className="label">Chỉ Số Cũ:</span>
+                <span className="value">
+                  {(selectedBill.CHISOCU === 0 || selectedBill.CHISOCU === '0' || selectedBill.CHISOCU)
+                    ? selectedBill.CHISOCU
+                    : '--'}
+                </span>
+              </div>
               {selectedBill.KWTHUCTE && (
                 <div className="detail-row">
                   <span className="label">kWh Thực Tế:</span>

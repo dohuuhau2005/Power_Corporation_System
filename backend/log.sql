@@ -2,6 +2,27 @@
 --admin 123456
 --TP1 : NV1 123456
 --TP2 : NV2 123456
+CREATE PLUGGABLE DATABASE TongBo 
+ADMIN USER admin_tongbo IDENTIFIED BY 123456
+FILE_NAME_CONVERT = ('/opt/oracle/oradata/XE/pdbseed/', '/opt/oracle/oradata/XE/TongBo/');
+ALTER SESSION sET CONTAINER = TongBo;
+ALTER PLUGGABLE DATABASE TongBo OPEN;
+ALTER PLUGGABLE DATABASE TongBo SAVE STATE;
+
+ALTER SESSION SET CONTAINER = CDB$ROOT;
+CREATE PLUGGABLE DATABASE TP1 
+ADMIN USER admin_TP1 IDENTIFIED BY 123456
+FILE_NAME_CONVERT = ('/opt/oracle/oradata/XE/pdbseed/', '/opt/oracle/oradata/XE/TP1/');
+ALTER SESSION sET CONTAINER = TP1;
+ALTER PLUGGABLE DATABASE TP1 OPEN;
+ALTER PLUGGABLE DATABASE TP1 SAVE STATE;
+
+CREATE PLUGGABLE DATABASE TP2 
+ADMIN USER admin_TP2 IDENTIFIED BY 123456
+FILE_NAME_CONVERT = ('/opt/oracle/oradata/XE/pdbseed/', '/opt/oracle/oradata/XE/TP2/');
+ALTER SESSION sET CONTAINER = TP2;
+ALTER PLUGGABLE DATABASE TP2 OPEN;
+ALTER PLUGGABLE DATABASE TP2 SAVE STATE;
 
 ALTER SESSION SET CONTAINER = TP1;
 ALTER SESSION SET CURRENT_SCHEMA = db_dienlucCN1;
@@ -19,8 +40,14 @@ select * from khachhang;
 alter session set current_schema =NV_101 ;
 alter session set current_schema =db_dienlucCN3 ;--NV_101
 select * from hopdong; 
-
-
+select * from hoadon;
+UPDATE hoadon SET soHD = soHD;
+commit;
+delete from hoadon;
+SELECT k.maCN 
+FROM hopdong h
+JOIN khachhang k ON h.maKH = k.maKH
+WHERE h.soHD = '01KN98GS8JFF7MBVJ3BXQ25145'; -- Thay đúng mã hợp đồng của sếp vào
 -- TP1 fragment
 INSERT INTO chinhanh VALUES 
 ('CN1', N'Chi nhánh 1 - TP1', 'TP1'),
@@ -111,7 +138,7 @@ SELECT name FROM v$datafile WHERE name LIKE '%pdbseed%';
 
 -- 1. Tạo Pluggable Database có tên là TongBo -- tổng bộ
 CREATE PLUGGABLE DATABASE TongBo 
-ADMIN USER admin_tongbo IDENTIFIED BY 123456 
+ADMIN USER admin_tongbo IDENTIFIED BY 123456 ;
 ROLES = (DBA);
 
 -- 2. Mở PDB TongBo lên để hoạt động
@@ -399,7 +426,8 @@ CREATE TABLE hoadon (
     chiSoMoi NUMBER,     -- Số trên đồng hồ tháng này
     kwThucTe NUMBER,     -- Bằng chiSoMoi - chiSoCu
     dongiaKW NUMBER,     -- Giá tiền/kW TẠI THỜI ĐIỂM CHỐT SỔ (copy từ hợp đồng qua)
-    
+    kwDinhMuc NUMBER,
+
     soTien NUMBER,       -- Bằng kwThucTe * dongiaKW
     thanhToan NUMBER(1) DEFAULT 0,
     FOREIGN KEY (soHD) REFERENCES hopdong(soHD)
@@ -642,37 +670,43 @@ BEGIN
     END IF;
 END;
 /
-
 CREATE OR REPLACE TRIGGER trg_sync_hoadon
 AFTER INSERT OR UPDATE OR DELETE ON hoadon
 FOR EACH ROW
 DECLARE
     v_maCN VARCHAR2(20);
-    v_maNV VARCHAR2(20);
+    v_soHD VARCHAR2(26);
 BEGIN
-    -- Xác định mã nhân viên
-    IF DELETING THEN v_maNV := :OLD.maNV; ELSE v_maNV := :NEW.maNV; END IF;
+    -- 1. Bắt lấy Mã Hợp Đồng
+    IF DELETING THEN 
+        v_soHD := :OLD.soHD; 
+    ELSE 
+        v_soHD := :NEW.soHD; 
+    END IF;
 
-    -- Tìm xem nhân viên này ở chi nhánh nào
+    -- 2. Truy vấn lồng lấy Mã Chi Nhánh
     BEGIN
-        SELECT maCN INTO v_maCN FROM nhanvien WHERE maNV = v_maNV;
+        SELECT k.maCN INTO v_maCN 
+        FROM hopdong h
+        JOIN khachhang k ON h.maKH = k.maKH
+        WHERE h.soHD = v_soHD;
     EXCEPTION
         WHEN NO_DATA_FOUND THEN
-            v_maCN := NULL; -- Tránh lỗi văng Trigger nếu không tìm thấy nhân viên
+            v_maCN := NULL;
     END;
 
-    -- Bắt đầu rẽ nhánh đồng bộ
+    -- 3. Rẽ nhánh đồng bộ (ĐÃ BỔ SUNG CỘT kwDinhMuc)
     IF v_maCN = 'CN1' THEN
         IF INSERTING THEN
             INSERT INTO hoadon@link_to_cn1 
-                (soHDN, thang, nam, soHD, maNV, chiSoCu, chiSoMoi, kwThucTe, dongiaKW, soTien, thanhToan) 
+                (soHDN, thang, nam, soHD, maNV, chiSoCu, chiSoMoi, kwThucTe, kwDinhMuc, dongiaKW, soTien, thanhToan) 
             VALUES 
-                (:NEW.soHDN, :NEW.thang, :NEW.nam, :NEW.soHD, :NEW.maNV, :NEW.chiSoCu, :NEW.chiSoMoi, :NEW.kwThucTe, :NEW.dongiaKW, :NEW.soTien, :NEW.thanhToan);
+                (:NEW.soHDN, :NEW.thang, :NEW.nam, :NEW.soHD, :NEW.maNV, :NEW.chiSoCu, :NEW.chiSoMoi, :NEW.kwThucTe, :NEW.kwDinhMuc, :NEW.dongiaKW, :NEW.soTien, :NEW.thanhToan);
         ELSIF UPDATING THEN
             UPDATE hoadon@link_to_cn1 
             SET thang = :NEW.thang, nam = :NEW.nam, soHD = :NEW.soHD, maNV = :NEW.maNV, 
                 chiSoCu = :NEW.chiSoCu, chiSoMoi = :NEW.chiSoMoi, kwThucTe = :NEW.kwThucTe, 
-                dongiaKW = :NEW.dongiaKW, soTien = :NEW.soTien, thanhToan = :NEW.thanhToan 
+                kwDinhMuc = :NEW.kwDinhMuc, dongiaKW = :NEW.dongiaKW, soTien = :NEW.soTien, thanhToan = :NEW.thanhToan 
             WHERE soHDN = :OLD.soHDN;
         ELSIF DELETING THEN
             DELETE FROM hoadon@link_to_cn1 WHERE soHDN = :OLD.soHDN;
@@ -681,14 +715,14 @@ BEGIN
     ELSIF v_maCN = 'CN2' THEN
         IF INSERTING THEN 
             INSERT INTO hoadon@link_to_cn2 
-                (soHDN, thang, nam, soHD, maNV, chiSoCu, chiSoMoi, kwThucTe, dongiaKW, soTien, thanhToan) 
+                (soHDN, thang, nam, soHD, maNV, chiSoCu, chiSoMoi, kwThucTe, kwDinhMuc, dongiaKW, soTien, thanhToan) 
             VALUES 
-                (:NEW.soHDN, :NEW.thang, :NEW.nam, :NEW.soHD, :NEW.maNV, :NEW.chiSoCu, :NEW.chiSoMoi, :NEW.kwThucTe, :NEW.dongiaKW, :NEW.soTien, :NEW.thanhToan);
+                (:NEW.soHDN, :NEW.thang, :NEW.nam, :NEW.soHD, :NEW.maNV, :NEW.chiSoCu, :NEW.chiSoMoi, :NEW.kwThucTe, :NEW.kwDinhMuc, :NEW.dongiaKW, :NEW.soTien, :NEW.thanhToan);
         ELSIF UPDATING THEN 
             UPDATE hoadon@link_to_cn2 
             SET thang = :NEW.thang, nam = :NEW.nam, soHD = :NEW.soHD, maNV = :NEW.maNV, 
                 chiSoCu = :NEW.chiSoCu, chiSoMoi = :NEW.chiSoMoi, kwThucTe = :NEW.kwThucTe, 
-                dongiaKW = :NEW.dongiaKW, soTien = :NEW.soTien, thanhToan = :NEW.thanhToan 
+                kwDinhMuc = :NEW.kwDinhMuc, dongiaKW = :NEW.dongiaKW, soTien = :NEW.soTien, thanhToan = :NEW.thanhToan 
             WHERE soHDN = :OLD.soHDN;
         ELSIF DELETING THEN 
             DELETE FROM hoadon@link_to_cn2 WHERE soHDN = :OLD.soHDN; 
@@ -697,14 +731,14 @@ BEGIN
     ELSIF v_maCN = 'CN3' THEN
         IF INSERTING THEN 
             INSERT INTO hoadon@link_to_cn3 
-                (soHDN, thang, nam, soHD, maNV, chiSoCu, chiSoMoi, kwThucTe, dongiaKW, soTien, thanhToan) 
+                (soHDN, thang, nam, soHD, maNV, chiSoCu, chiSoMoi, kwThucTe, kwDinhMuc, dongiaKW, soTien, thanhToan) 
             VALUES 
-                (:NEW.soHDN, :NEW.thang, :NEW.nam, :NEW.soHD, :NEW.maNV, :NEW.chiSoCu, :NEW.chiSoMoi, :NEW.kwThucTe, :NEW.dongiaKW, :NEW.soTien, :NEW.thanhToan);
+                (:NEW.soHDN, :NEW.thang, :NEW.nam, :NEW.soHD, :NEW.maNV, :NEW.chiSoCu, :NEW.chiSoMoi, :NEW.kwThucTe, :NEW.kwDinhMuc, :NEW.dongiaKW, :NEW.soTien, :NEW.thanhToan);
         ELSIF UPDATING THEN 
             UPDATE hoadon@link_to_cn3 
             SET thang = :NEW.thang, nam = :NEW.nam, soHD = :NEW.soHD, maNV = :NEW.maNV, 
                 chiSoCu = :NEW.chiSoCu, chiSoMoi = :NEW.chiSoMoi, kwThucTe = :NEW.kwThucTe, 
-                dongiaKW = :NEW.dongiaKW, soTien = :NEW.soTien, thanhToan = :NEW.thanhToan 
+                kwDinhMuc = :NEW.kwDinhMuc, dongiaKW = :NEW.dongiaKW, soTien = :NEW.soTien, thanhToan = :NEW.thanhToan 
             WHERE soHDN = :OLD.soHDN;
         ELSIF DELETING THEN 
             DELETE FROM hoadon@link_to_cn3 WHERE soHDN = :OLD.soHDN; 
@@ -713,14 +747,14 @@ BEGIN
     ELSIF v_maCN = 'CN4' THEN
         IF INSERTING THEN 
             INSERT INTO hoadon@link_to_cn4 
-                (soHDN, thang, nam, soHD, maNV, chiSoCu, chiSoMoi, kwThucTe, dongiaKW, soTien, thanhToan) 
+                (soHDN, thang, nam, soHD, maNV, chiSoCu, chiSoMoi, kwThucTe, kwDinhMuc, dongiaKW, soTien, thanhToan) 
             VALUES 
-                (:NEW.soHDN, :NEW.thang, :NEW.nam, :NEW.soHD, :NEW.maNV, :NEW.chiSoCu, :NEW.chiSoMoi, :NEW.kwThucTe, :NEW.dongiaKW, :NEW.soTien, :NEW.thanhToan);
+                (:NEW.soHDN, :NEW.thang, :NEW.nam, :NEW.soHD, :NEW.maNV, :NEW.chiSoCu, :NEW.chiSoMoi, :NEW.kwThucTe, :NEW.kwDinhMuc, :NEW.dongiaKW, :NEW.soTien, :NEW.thanhToan);
         ELSIF UPDATING THEN 
             UPDATE hoadon@link_to_cn4 
             SET thang = :NEW.thang, nam = :NEW.nam, soHD = :NEW.soHD, maNV = :NEW.maNV, 
                 chiSoCu = :NEW.chiSoCu, chiSoMoi = :NEW.chiSoMoi, kwThucTe = :NEW.kwThucTe, 
-                dongiaKW = :NEW.dongiaKW, soTien = :NEW.soTien, thanhToan = :NEW.thanhToan 
+                kwDinhMuc = :NEW.kwDinhMuc, dongiaKW = :NEW.dongiaKW, soTien = :NEW.soTien, thanhToan = :NEW.thanhToan 
             WHERE soHDN = :OLD.soHDN;
         ELSIF DELETING THEN 
             DELETE FROM hoadon@link_to_cn4 WHERE soHDN = :OLD.soHDN; 
@@ -729,7 +763,6 @@ BEGIN
     END IF;
 END;
 /
-
 -- Đảm bảo đang đứng ở Tổng Bộ và dùng đúng tài khoản
 ALTER SESSION SET CONTAINER = TongBo;
 ALTER SESSION SET CURRENT_SCHEMA = db_dienluc;
@@ -1145,16 +1178,16 @@ END;
 /
 
 
-
+alter session set container = TP2;
 -- 2. Cắm lại biển báo sang đường dẫn Linux
 CREATE OR REPLACE DIRECTORY backup_dir AS '/opt/oracle/oradata/';
 
 -- 3. Cấp quyền cho thằng system (vì tí nữa sếp dùng system để chạy impdp)
 GRANT READ, WRITE ON DIRECTORY backup_dir TO system;
 
-docker cp C:\Electric_Corporation\Power_Corporation_System\setup\oracleBackup\TP1_FULL.dmp oracle_21c_xe:/opt/oracle/oradata/
+docker cp C:\ElectricSystem\Power_Corporation_System\setup\oracleBackup\TP1_FULL.dmp oracle_21c_xe:/opt/oracle/oradata/
 
-docker cp C:\Electric_Corporation\Power_Corporation_System\setup\oracleBackup\TP2_FULL.dmp oracle_21c_xe:/opt/oracle/oradata/
+docker cp C:\ElectricSystem\Power_Corporation_System\setup\oracleBackup\TP2_FULL.dmp oracle_21c_xe:/opt/oracle/oradata/
 
 
 create or replace trigger trg_tinh_tien_hoadon
@@ -1163,6 +1196,7 @@ for each row
 declare
     v_dongiakw number;
     v_chisocu number;
+    v_kwdinhmuc number;
 begin
     begin
         select chiSoMoi  into v_chisocu 
@@ -1179,13 +1213,15 @@ begin
     end; 
 
     begin
-        select dongiaKW into v_dongiakw from hopdong where soHD = :NEW.soHD;
+        select dongiaKW, kwDinhMuc into v_dongiakw, v_kwdinhmuc from hopdong where soHD = :NEW.soHD;
     exception
         when no_data_found then
             v_dongiakw := 0;
+            v_kwdinhmuc := 0;
     end;
     :New.dongiaKW := v_dongiakw;
     :NEW.chiSoCu := v_chisocu;
+    :NEW.kwDinhMuc := v_kwdinhmuc;
     if(:NEW.chiSoMoi < :NEW.chiSoCu) then
         RAISE_APPLICATION_ERROR(-20006, 'LỖI NGHIỆP VỤ: Chỉ số mới (chiSoMoi = ' || :NEW.chiSoMoi || ') không được phép nhỏ hơn chỉ số cũ (chiSoCu = ' || :NEW.chiSoCu || ')!');
     end if;
@@ -1223,7 +1259,7 @@ docker cp oracle_21c_xe:/opt/oracle/oradata/backup/TongBo_Full_Backup.log C:\Ele
 ALTER SESSION SET CONTAINER = TP1;
 CREATE OR REPLACE DIRECTORY backup_dir AS '/opt/oracle/oradata/backup';
 GRANT READ, WRITE ON DIRECTORY backup_dir TO sys;
-expdp system/123456@localhost:1521/TP1 directory=backup_dir dumpfile=TP1_Full_Backup.dmp logfile=TP1_Full_Backup.log full=y-- 3. Chui vào nhà Chi nhánh 2 (TP2) và cấp sổ đỏ
+impdp system/123456@localhost:1521/TP1 directory=backup_dir dumpfile=TP1_Full_Backup.dmp logfile=TP1_Full_Backup.log full=y-- 3. Chui vào nhà Chi nhánh 2 (TP2) và cấp sổ đỏ
 docker cp oracle_21c_xe:/opt/oracle/oradata/backup/TP1_Full_Backup.dmp C:\Electric_Corporation\Power_Corporation_System\setup\oracleBackup
 docker cp oracle_21c_xe:/opt/oracle/oradata/backup/TP1_Full_Backup.log C:\Electric_Corporation\Power_Corporation_System\setup\oracleBackup
 
