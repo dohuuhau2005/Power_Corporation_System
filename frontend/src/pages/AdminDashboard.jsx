@@ -5,6 +5,7 @@ import SitesManagement from './admin/SitesManagement'
 import StaffsManagement from './admin/StaffsManagement'
 import ContractsManagement from './admin/ContractsManagement'
 import BillsManagement from './admin/BillsManagement'
+import BillCalculationDetail from './BillCalculationDetail'
 import WorkHistory from './admin/WorkHistory'
 import './AdminDashboard.css'
 
@@ -17,6 +18,7 @@ export default function AdminDashboard() {
         <Route path="/staffs" element={<StaffsManagement />} />
         <Route path="/contracts" element={<ContractsManagement />} />
         <Route path="/bills" element={<BillsManagement />} />
+        <Route path="/bills/calc/:soHDN" element={<BillCalculationDetail />} />
         <Route path="/work-history" element={<WorkHistory />} />
       </Routes>
     </AdminLayout>

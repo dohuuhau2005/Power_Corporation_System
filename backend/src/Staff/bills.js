@@ -204,4 +204,38 @@ router.put("/bills/pay/:id", verifyToken, authorization("R_ADMIN", "R_STAFF", "R
         return res.status(500).json({ success: false, message: "Lỗi máy chủ khi thanh toán hóa đơn" });
     }
 });
+router.get("/bill/:id", verifyToken, authorization("R_ADMIN", "R_STAFF", "R_MANAGER"), async (req, res) => {
+    const soHDN = req.params.id;
+    const query = `
+        SELECT *
+        FROM chitiethoadon
+        WHERE soHDN = :soHDN
+    `;
+    let connect;
+    try {
+        const connectionJson = DecryptAES({ iv: req.user.iv, ciphertext: req.user.connectionJson });
+        connect = await connectionFromJson.getConnectionFromJson(connectionJson, req.user.chinhanh);
+        const result = await connect.execute(
+            query,
+            { soHDN: soHDN },
+            { outFormat: oracledb.OUT_FORMAT_OBJECT });
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, message: "Không tìm thấy chi tiết hóa đơn" });
+        }
+        return res.status(200).json({ success: true, billDetails: result.rows });
+    }
+    catch (error) {
+        console.error("Lỗi lấy chi tiết hóa đơn:", error);
+        return res.status(500).json({ success: false, message: "Lỗi máy chủ khi lấy chi tiết hóa đơn" });
+    } finally {
+        if (connect) {
+            try {
+                await connect.close();
+            } catch (err) {
+                console.error("Lỗi đóng connection:", err);
+            }
+        }
+    }
+    // ... (các bước xử lý tương tự như trong route khác)
+});
 module.exports = router;

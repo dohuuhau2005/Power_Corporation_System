@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { getBillsByContract, getBillDetail, payBill } from '../../services/api'
 import { useAuthStore } from '../../store/authStore'
 import Table from '../../components/Table'
@@ -7,6 +7,7 @@ import './BillsManagement.css'
 
 export default function BillsManagement() {
   const location = useLocation()
+  const navigate = useNavigate()
   const { user } = useAuthStore()
   const soHDFromState = location.state?.soHD
   
@@ -57,6 +58,12 @@ export default function BillsManagement() {
     }
   }
 
+  const handleViewCalculationDetail = (soHDN) => {
+    setShowDetail(false)
+    setSelectedBill(null)
+    navigate(`/employee/bills/calc/${soHDN}`)
+  }
+
   const handlePayBill = async (soHDN) => {
     if (!window.confirm('Bạn có chắc chắn muốn thanh toán hóa đơn này?')) {
       return
@@ -79,13 +86,19 @@ export default function BillsManagement() {
       setError('Không có hóa đơn nào chưa thanh toán')
       return
     }
-    setSelectedBillsForPay(unpaidBills.map(b => b.SOHDN))
+    setSelectedBillsForPay(unpaidBills)
     setShowPayConfirm(true)
   }
 
   const confirmBulkPay = async () => {
+    const billIds = selectedBillsForPay.map(bill => bill.SOHDN)
+    if (billIds.length === 0) {
+      setShowPayConfirm(false)
+      return
+    }
+
     try {
-      await Promise.all(selectedBillsForPay.map(soHDN => payBill(soHDN)))
+      await Promise.all(billIds.map(soHDN => payBill(soHDN)))
       await fetchBills(currentSoHD)
       setShowPayConfirm(false)
       setSelectedBillsForPay([])
@@ -154,13 +167,46 @@ export default function BillsManagement() {
           <div className="modal-content">
             <div className="modal-header">
               <h3>Xác Nhận Thanh Toán</h3>
-              <button className="close-btn" onClick={() => setShowPayConfirm(false)}>×</button>
+              <button
+                className="close-btn"
+                onClick={() => {
+                  setShowPayConfirm(false)
+                  setSelectedBillsForPay([])
+                }}
+              >
+                ×
+              </button>
             </div>
             <div className="modal-body">
-              <p>Bạn có chắc chắn muốn thanh toán {selectedBillsForPay.length} hóa đơn chưa thanh toán?</p>
+              <p>Danh sách hóa đơn chưa thanh toán:</p>
+              <div className="bulk-pay-list">
+                {selectedBillsForPay.map((bill) => (
+                  <div key={bill.SOHDN} className="bulk-pay-item">
+                    <span className="bulk-pay-month">Tháng {bill.THANG}/{bill.NAM}</span>
+                    <span className="bulk-pay-amount">{formatCurrency(bill.SOTIEN)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="bulk-pay-total">
+                <span>Tổng cộng</span>
+                <span>
+                  {formatCurrency(
+                    selectedBillsForPay.reduce((sum, bill) => {
+                      const amount = Number.parseInt(bill.SOTIEN, 10)
+                      return sum + (Number.isNaN(amount) ? 0 : amount)
+                    }, 0)
+                  )}
+                </span>
+              </div>
             </div>
             <div className="modal-footer">
-              <button onClick={() => setShowPayConfirm(false)} className="btn-cancel">
+              <button
+                onClick={() => {
+                  setShowPayConfirm(false)
+                  setSelectedBillsForPay([])
+                }}
+                className="btn-cancel"
+              >
                 Hủy
               </button>
               <button onClick={confirmBulkPay} className="btn-confirm">
@@ -254,6 +300,12 @@ export default function BillsManagement() {
                   Thanh Toán
                 </button>
               )}
+              <button
+                onClick={() => handleViewCalculationDetail(selectedBill.SOHDN)}
+                className="btn-detail-calc"
+              >
+                Xem chi tiết cách tính
+              </button>
               <button onClick={() => { setShowDetail(false); setSelectedBill(null) }} className="btn-close">
                 Đóng
               </button>

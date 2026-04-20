@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
+import SessionCountdown from './SessionCountdown'
 import { logout as logoutApi } from '../services/api'
 import './AdminLayout.css'
 
@@ -55,6 +56,7 @@ export default function AdminLayout({ children }) {
             <h1>Power Corporation - Quản Lý Hệ Thống</h1>
           </div>
           <div className="header-right">
+            <SessionCountdown />
             <span className="user-greeting">👋 Xin chào, {user?.ten}</span>
           </div>
         </header>

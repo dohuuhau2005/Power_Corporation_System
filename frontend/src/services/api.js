@@ -169,6 +169,11 @@ export const getBillDetail = async (id) => {
   return response.data
 }
 
+export const getBillCalculationDetail = async (soHDN) => {
+  const response = await api.get(`/employee/bill/${soHDN}`)
+  return response.data
+}
+
 export const createBill = async (data) => {
   const response = await api.post('/employee/bills', data)
   return response.data

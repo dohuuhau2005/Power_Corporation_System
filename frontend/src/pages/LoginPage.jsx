@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { login } from '../services/api'
+import { getTokenExpiryMs, normalizeExpiryMs } from '../utils/jwt'
 import './LoginPage.css'
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const { setUser, setAuthenticated } = useAuthStore()
+  const { setUser, setAuthenticated, setSessionExpiry } = useAuthStore()
   const [credentials, setCredentials] = useState({
     MaTK: '',
     password: '',
@@ -33,6 +34,10 @@ export default function LoginPage() {
       const response = await login(credentials)
       if (response.message.includes('thành công')) {
         setUser(response.data)
+        const token = response.token ?? response.data?.token ?? response.data?.data?.token ?? response.accessToken
+        const expiryMs = getTokenExpiryMs(token) ?? normalizeExpiryMs(response.exp ?? response.data?.exp)
+        setSessionExpiry(expiryMs)
+        console.log('User data after login:', response.token) // Debug: Kiểm tra dữ liệu người dùng
         setAuthenticated(true)
         // Token đã được lưu trong cookie httpOnly bởi server
         navigate(response.data.role === 'R_ADMIN' ? '/admin' : '/employee')

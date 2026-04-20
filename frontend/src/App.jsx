@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect, useState } from 'react' // Nhớ import useState
 import { useAuthStore } from './store/authStore'
+import { getTokenExpiryMs, normalizeExpiryMs } from './utils/jwt'
 import { verifyToken } from './services/api'
 import LoginPage from './pages/LoginPage'
 import AdminDashboard from './pages/AdminDashboard'
@@ -9,7 +10,7 @@ import PrivateRoute from './components/PrivateRoute'
 import './App.css'
 
 export default function App() {
-  const { isAuthenticated, setAuthenticated, user, setUser } = useAuthStore()
+  const { isAuthenticated, setAuthenticated, user, setUser, setSessionExpiry } = useAuthStore()
   
   // 1. Thêm State này
   const [isChecking, setIsChecking] = useState(true) 
@@ -22,6 +23,11 @@ export default function App() {
           setAuthenticated(true)
           // 2. PHẢI CẬP NHẬT LẠI USER Ở ĐÂY (Điều chỉnh response.data.data tùy theo API của bạn)
           setUser(response.data.data) 
+          const token = response.data?.token ?? response.data?.data?.token ?? response.data?.accessToken
+          const expiryMs = getTokenExpiryMs(token) ?? normalizeExpiryMs(response.data?.exp ?? response.data?.data?.exp)
+          if (expiryMs !== null) {
+            setSessionExpiry(expiryMs)
+          }
         } else {
           setAuthenticated(false)
           setUser(null)
