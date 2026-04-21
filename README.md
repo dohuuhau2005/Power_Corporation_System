@@ -70,3 +70,16 @@ Make sure you have installed:
 ```bash
 git clone [https://github.com/your-username/electricity-billing-system.git](https://github.com/your-username/electricity-billing-system.git)
 cd electricity-billing-system
+```
+
+---
+
+## 📁 Folder Path Summary
+
+| Path | Description |
+| --- | --- |
+| `AutoService/` | Background workers and automation services (RabbitMQ consumers, scheduled tasks). |
+| `backend/` | API server and core business logic. |
+| `frontend/` | Web client application. |
+| `setup/` | Infrastructure setup assets (configs, backups, and utilities). |
+| `images/` | Documentation images and diagrams. |
