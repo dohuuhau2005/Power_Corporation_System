@@ -25,7 +25,7 @@ The core of this system relies on a hybrid distributed model to ensure load bala
 
 > **Note:** Replace the image path below with your actual image file once uploaded to Github.
 > 
-![System Architecture Diagram](./docs/architecture-diagram.png) 
+![System Architecture Diagram](./images/architecture.drawio.png) 
 *Figure 1: High-level System Architecture illustrating the Master-Slave Oracle nodes, RabbitMQ Broker, and API Gateway.*
 
 ### Data Flow Overview:
