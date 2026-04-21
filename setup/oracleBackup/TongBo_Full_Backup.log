@@ -1,5 +1,5 @@
 ;;; 
-Export: Release 21.0.0.0.0 - Production on Fri Apr 17 23:59:06 2026
+Export: Release 21.0.0.0.0 - Production on Tue Apr 21 01:11:15 2026
 Version 21.3.0.0.0
 
 Copyright (c) 1982, 2021, Oracle and/or its affiliates.  All rights reserved.
@@ -61,19 +61,6 @@ Processing object type DATABASE_EXPORT/SCHEMA/POST_SCHEMA/PROCACT_SCHEMA
 Processing object type DATABASE_EXPORT/AUDIT_UNIFIED/AUDIT_POLICY_ENABLE
 Processing object type DATABASE_EXPORT/POST_SYSTEM_IMPCALLOUT/MARKER
 . . exported "SYS"."KU$_USER_MAPPING_VIEW"               6.054 KB      36 rows
-. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P470"           77.38 KB      56 rows
-. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P442"           63.30 KB      20 rows
-. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P463"           58.16 KB      12 rows
-. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P449"           57.71 KB      11 rows
-. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P491"           56.02 KB       7 rows
-. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P477"           55.87 KB       8 rows
-. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P435"           55.39 KB       6 rows
-. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P428"           55.12 KB       6 rows
-. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P505"           54.33 KB       4 rows
-. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P281"           53.60 KB       3 rows
-. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P456"           53.26 KB       2 rows
-. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P484"           53.20 KB       1 rows
-. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P498"           53.14 KB       1 rows
 . . exported "SYSTEM"."REDO_DB"                          26.01 KB       1 rows
 . . exported "LBACSYS"."OLS$INSTALLATIONS"               6.960 KB       2 rows
 . . exported "SYS"."DAM_CONFIG_PARAM$"                   6.531 KB      14 rows
@@ -84,6 +71,19 @@ Processing object type DATABASE_EXPORT/POST_SYSTEM_IMPCALLOUT/MARKER
 . . exported "LBACSYS"."OLS$AUDIT_ACTIONS"               5.757 KB       8 rows
 . . exported "LBACSYS"."OLS$DIP_EVENTS"                  5.539 KB       2 rows
 . . exported "AUDSYS"."AUD$UNIFIED":"AUD_UNIFIED_P0"         0 KB       0 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P281"           54.94 KB       6 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P431"           55.12 KB       6 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P438"           55.39 KB       6 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P445"           63.30 KB      20 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P452"           57.71 KB      11 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P459"           53.26 KB       2 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P466"           58.16 KB      12 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P473"           77.38 KB      56 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P480"           55.87 KB       8 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P487"           53.20 KB       1 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P494"           56.02 KB       7 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P501"           53.14 KB       1 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P508"           54.33 KB       4 rows
 . . exported "LBACSYS"."OLS$AUDIT"                           0 KB       0 rows
 . . exported "LBACSYS"."OLS$COMPARTMENTS"                    0 KB       0 rows
 . . exported "LBACSYS"."OLS$DIP_DEBUG"                       0 KB       0 rows
@@ -130,7 +130,7 @@ Processing object type DATABASE_EXPORT/POST_SYSTEM_IMPCALLOUT/MARKER
 . . exported "SYS"."SQLOBJ$_DATAPUMP"                        0 KB       0 rows
 . . exported "SYSTEM"."SCHEDULER_JOB_ARGS"                   0 KB       0 rows
 . . exported "SYSTEM"."SCHEDULER_PROGRAM_ARGS"               0 KB       0 rows
-. . exported "DB_DIENLUC"."HOADON"                       9.414 KB       1 rows
+. . exported "DB_DIENLUC"."HOADON"                       9.828 KB       1 rows
 . . exported "DB_DIENLUC"."HOPDONG"                      8.421 KB      10 rows
 . . exported "DB_DIENLUC"."LICHSUCHUYENCONGTAC"          7.234 KB       2 rows
 . . exported "DB_DIENLUC"."NHANVIEN"                     7.132 KB       6 rows
@@ -139,9 +139,11 @@ Processing object type DATABASE_EXPORT/POST_SYSTEM_IMPCALLOUT/MARKER
 . . exported "DB_DIENLUC"."KHACHHANG":"P_CN2"            6.398 KB       1 rows
 . . exported "DB_DIENLUC"."KHACHHANG":"P_CN4"            6.390 KB       1 rows
 . . exported "DB_DIENLUC"."CHINHANH"                     6.218 KB       5 rows
+. . exported "DB_DIENLUC"."BANGGIAKW"                    5.976 KB       6 rows
+. . exported "DB_DIENLUC"."CHITIETHOADON"                7.992 KB       7 rows
 . . exported "DB_DIENLUC"."KHACHHANG":"P_KHAC"               0 KB       0 rows
 Master table "SYSTEM"."SYS_EXPORT_FULL_01" successfully loaded/unloaded
 ******************************************************************************
 Dump file set for SYSTEM.SYS_EXPORT_FULL_01 is:
   /opt/oracle/oradata/backup/TongBo_Full_Backup.dmp
-Job "SYSTEM"."SYS_EXPORT_FULL_01" completed with 1 error(s) at Sat Apr 18 00:00:08 2026 elapsed 0 00:00:59
+Job "SYSTEM"."SYS_EXPORT_FULL_01" completed with 1 error(s) at Tue Apr 21 01:12:13 2026 elapsed 0 00:00:57

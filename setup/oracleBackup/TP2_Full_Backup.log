@@ -1,5 +1,5 @@
 ;;; 
-Export: Release 21.0.0.0.0 - Production on Sat Apr 18 00:00:09 2026
+Export: Release 21.0.0.0.0 - Production on Tue Apr 21 01:13:29 2026
 Version 21.3.0.0.0
 
 Copyright (c) 1982, 2021, Oracle and/or its affiliates.  All rights reserved.
@@ -51,6 +51,7 @@ Processing object type DATABASE_EXPORT/NORMAL_POST_INSTANCE_IMPCALLOUT/MARKER
 Processing object type DATABASE_EXPORT/SCHEMA/TABLE/TABLE
 Processing object type DATABASE_EXPORT/SCHEMA/TABLE/GRANT/OWNER_GRANT/OBJECT_GRANT
 Processing object type DATABASE_EXPORT/SCHEMA/TABLE/COMMENT
+Processing object type DATABASE_EXPORT/SCHEMA/TABLE/IDENTITY_COLUMN
 Processing object type DATABASE_EXPORT/SCHEMA/TABLE/INDEX/INDEX
 Processing object type DATABASE_EXPORT/SCHEMA/TABLE/CONSTRAINT/CONSTRAINT
 Processing object type DATABASE_EXPORT/SCHEMA/TABLE/CONSTRAINT/REF_CONSTRAINT
@@ -60,15 +61,6 @@ Processing object type DATABASE_EXPORT/SCHEMA/POST_SCHEMA/PROCACT_SCHEMA
 Processing object type DATABASE_EXPORT/AUDIT_UNIFIED/AUDIT_POLICY_ENABLE
 Processing object type DATABASE_EXPORT/POST_SYSTEM_IMPCALLOUT/MARKER
 . . exported "SYS"."KU$_USER_MAPPING_VIEW"               6.031 KB      34 rows
-. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P398"           62.00 KB      14 rows
-. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P412"           61.50 KB      18 rows
-. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P433"           59.41 KB      14 rows
-. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P405"           55.82 KB       8 rows
-. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P440"           55.49 KB       6 rows
-. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P391"           55.12 KB       6 rows
-. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P419"           54.18 KB       4 rows
-. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P281"           53.60 KB       3 rows
-. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P426"           53.24 KB       2 rows
 . . exported "SYSTEM"."REDO_DB"                          26.01 KB       1 rows
 . . exported "LBACSYS"."OLS$INSTALLATIONS"               6.960 KB       2 rows
 . . exported "SYS"."DAM_CONFIG_PARAM$"                   6.531 KB      14 rows
@@ -79,6 +71,15 @@ Processing object type DATABASE_EXPORT/POST_SYSTEM_IMPCALLOUT/MARKER
 . . exported "LBACSYS"."OLS$AUDIT_ACTIONS"               5.757 KB       8 rows
 . . exported "LBACSYS"."OLS$DIP_EVENTS"                  5.539 KB       2 rows
 . . exported "AUDSYS"."AUD$UNIFIED":"AUD_UNIFIED_P0"         0 KB       0 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P281"           54.94 KB       6 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P391"           55.12 KB       6 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P398"           62.00 KB      14 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P405"           55.82 KB       8 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P412"           61.50 KB      18 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P419"           54.18 KB       4 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P426"           53.24 KB       2 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P433"           59.41 KB      14 rows
+. . exported "AUDSYS"."AUD$UNIFIED":"SYS_P440"           55.49 KB       6 rows
 . . exported "LBACSYS"."OLS$AUDIT"                           0 KB       0 rows
 . . exported "LBACSYS"."OLS$COMPARTMENTS"                    0 KB       0 rows
 . . exported "LBACSYS"."OLS$DIP_DEBUG"                       0 KB       0 rows
@@ -135,8 +136,10 @@ Processing object type DATABASE_EXPORT/POST_SYSTEM_IMPCALLOUT/MARKER
 . . exported "DB_DIENLUCCN4"."KHACHHANG"                 6.390 KB       1 rows
 . . exported "DB_DIENLUCCN2"."CHINHANH"                  5.992 KB       1 rows
 . . exported "DB_DIENLUCCN4"."CHINHANH"                  5.992 KB       1 rows
+. . exported "DB_DIENLUCCN2"."CHITIETHOADON"                 0 KB       0 rows
+. . exported "DB_DIENLUCCN4"."CHITIETHOADON"                 0 KB       0 rows
 Master table "SYSTEM"."SYS_EXPORT_FULL_01" successfully loaded/unloaded
 ******************************************************************************
 Dump file set for SYSTEM.SYS_EXPORT_FULL_01 is:
   /opt/oracle/oradata/backup/TP2_Full_Backup.dmp
-Job "SYSTEM"."SYS_EXPORT_FULL_01" completed with 1 error(s) at Sat Apr 18 00:01:07 2026 elapsed 0 00:00:56
+Job "SYSTEM"."SYS_EXPORT_FULL_01" completed with 1 error(s) at Tue Apr 21 01:14:36 2026 elapsed 0 00:01:05
