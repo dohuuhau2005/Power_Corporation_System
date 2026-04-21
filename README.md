@@ -40,7 +40,7 @@ The core of this system relies on a hybrid distributed model to ensure load bala
 
 ## 💻 Tech Stack
 
-* **Frontend (Client):** React.js, Tailwind CSS (for responsive UI), Axios.
+* **Frontend (Client):** React.js, Vanilla CSS3 (Custom styling with advanced gradients & flexbox), Axios.
 * **Backend & Workers:** Node.js, Express.js, node-cron.
 * **Relational Database (Core):** Oracle Database (Master Node & Branch Nodes).
 * **NoSQL Database (Time-series):** MongoDB (Used for storing millions of IoT electrical meter readings).
