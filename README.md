@@ -72,7 +72,7 @@ Make sure you have installed:
 - Redis server
 - RabbitMQ server
 
-*(Add your installation steps here...)*
+
 
 ---
 
