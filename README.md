@@ -58,7 +58,7 @@ The core of this system relies on a hybrid distributed model to ensure load bala
 
 ## 🚀 Installation & Deployment
 
-### 1. Prerequisites
+###  Prerequisites
 Make sure you have installed:
 - Node.js (v18 or higher)
 - Oracle Database (with properly configured DB Links for branches)
@@ -66,11 +66,6 @@ Make sure you have installed:
 - Redis server
 - RabbitMQ server
 
-### 2. Clone the repository
-```bash
-git clone [https://github.com/your-username/electricity-billing-system.git](https://github.com/your-username/electricity-billing-system.git)
-cd electricity-billing-system
-```
 
 ---
 
