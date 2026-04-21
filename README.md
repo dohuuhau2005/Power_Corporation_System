@@ -5,8 +5,9 @@
 ![MongoDB](https://img.shields.io/badge/MongoDB-IoT_Data-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
 ![RabbitMQ](https://img.shields.io/badge/RabbitMQ-Enabled-FF6600?style=for-the-badge&logo=rabbitmq&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-Caching-DC382D?style=for-the-badge&logo=redis&logoColor=white)
+![Security](https://img.shields.io/badge/Security-RSA%20%2B%20AES-8A2BE2?style=for-the-badge&logo=springsecurity&logoColor=white)
 
-Final project for the **Distributed Database Systems** course. This system simulates a high-performance electricity service management platform featuring a **horizontal fragmentation architecture**, integrated with an **Event-Driven Asynchronous Billing Engine** and **Real-time Data Replication**.
+Final project for the **Distributed Database Systems** course. This system simulates a high-performance electricity service management platform featuring a **horizontal fragmentation architecture**, integrated with an **Event-Driven Asynchronous Billing Engine**, **Real-time Data Replication**, and **Robust Hybrid Cryptography**.
 
 ---
 
@@ -15,7 +16,7 @@ Final project for the **Distributed Database Systems** course. This system simul
 - [Tech Stack](#-tech-stack)
 - [Key Features](#-key-features)
 - [Installation & Deployment](#-installation--deployment)
-- [Usage Guide](#-usage-guide)
+- [Folder Path Summary](#-folder-path-summary)
 
 ---
 
@@ -43,11 +44,13 @@ The core of this system relies on a hybrid distributed model to ensure load bala
 * **NoSQL Database (Time-series):** MongoDB (Used for storing millions of IoT electrical meter readings)
 * **Caching Layer:** Redis v4 (For static state pricing policies)
 * **Message Broker:** RabbitMQ
+* **Security & Cryptography:** Hybrid Encryption (RSA Asymmetric + AES-256 Symmetric keys)
 
 ---
 
 ## ✨ Key Features
 
+* **Advanced Hybrid Encryption (RSA + AES):** Implements a military-grade security layer. RSA is utilized for secure key exchange (handshake), while AES ensures high-speed symmetric encryption for large data payloads, guaranteeing that sensitive customer information and billing data remain completely protected during transmission.
 * **Horizontal Database Fragmentation:** Dynamic routing of data to localized Oracle nodes based on the customer's branch code using advanced Oracle Triggers and DB Links.
 * **Smart Tiered Billing Algorithm:** An automated engine that calculates monthly bills combining government-standard tiered pricing and customized contract quotas.
 * **Historical Data Snapshotting:** Enforces strict accounting principles by permanently freezing rates and quotas (`kwDinhMuc`, `dongiaKW`) inside the Invoice records upon generation.
@@ -58,7 +61,7 @@ The core of this system relies on a hybrid distributed model to ensure load bala
 
 ## 🚀 Installation & Deployment
 
-###  Prerequisites
+### Prerequisites
 Make sure you have installed:
 - Node.js (v18 or higher)
 - Oracle Database (with properly configured DB Links for branches)
@@ -66,6 +69,7 @@ Make sure you have installed:
 - Redis server
 - RabbitMQ server
 
+*(Add your installation steps here...)*
 
 ---
 
@@ -74,7 +78,10 @@ Make sure you have installed:
 | Path | Description |
 | --- | --- |
 | `AutoService/` | Background workers and automation services (RabbitMQ consumers, scheduled tasks). |
-| `backend/` | API server and core business logic. |
+| `backend/` | API server and core business logic (includes RSA/AES encryption utilities). |
 | `frontend/` | Web client application. |
 | `setup/` | Infrastructure setup assets (configs, backups, and utilities). |
 | `images/` | Documentation images and diagrams. |
+
+---
+*Built with ❤️ for the Distributed Database Systems Course.*
