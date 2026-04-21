@@ -1,5 +1,6 @@
 # ⚡ Electricity Service System - Distributed Database Architecture
 
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 ![Node.js](https://img.shields.io/badge/Node.js-v18+-43853D?style=for-the-badge&logo=node.js&logoColor=white)
 ![Oracle](https://img.shields.io/badge/Oracle_Database-Distributed-F80000?style=for-the-badge&logo=oracle&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-IoT_Data-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
@@ -30,7 +31,7 @@ The core of this system relies on a hybrid distributed model to ensure load bala
 *Figure 1: High-level System Architecture illustrating the Master-Slave Oracle nodes, RabbitMQ Broker, and API Gateway.*
 
 ### Data Flow Overview:
-1. **Client (Web/App):** Queries local branch databases directly (CN1, CN2, CN3, CN4) for lightning-fast read operations (Local Autonomy).
+1. **Client (Web/App):** Built with **React**, querying local branch databases directly (CN1, CN2, CN3, CN4) for lightning-fast read operations (Local Autonomy).
 2. **API Gateway (Backend):** Routes write-heavy operations to the central message queue.
 3. **RabbitMQ Broker:** Buffers incoming requests and events to prevent database lockups during peak times.
 4. **Automated Workers:** Listens to queues, processes complex tiered-billing logic, fetches cached electricity rates, and executes batch inserts.
@@ -39,18 +40,20 @@ The core of this system relies on a hybrid distributed model to ensure load bala
 
 ## 💻 Tech Stack
 
-* **Backend & Workers:** Node.js, Express.js, node-cron
-* **Relational Database (Core):** Oracle Database (Master Node & Branch Nodes)
-* **NoSQL Database (Time-series):** MongoDB (Used for storing millions of IoT electrical meter readings)
-* **Caching Layer:** Redis v4 (For static state pricing policies)
-* **Message Broker:** RabbitMQ
-* **Security & Cryptography:** Hybrid Encryption (RSA Asymmetric + AES-256 Symmetric keys)
+* **Frontend (Client):** React.js, Tailwind CSS (for responsive UI), Axios.
+* **Backend & Workers:** Node.js, Express.js, node-cron.
+* **Relational Database (Core):** Oracle Database (Master Node & Branch Nodes).
+* **NoSQL Database (Time-series):** MongoDB (Used for storing millions of IoT electrical meter readings).
+* **Caching Layer:** Redis v4 (For static state pricing policies).
+* **Message Broker:** RabbitMQ.
+* **Security & Cryptography:** Hybrid Encryption (RSA Asymmetric + AES-256 Symmetric keys).
 
 ---
 
 ## ✨ Key Features
 
-* **Advanced Hybrid Encryption (RSA + AES):** Implements a military-grade security layer. RSA is utilized for secure key exchange (handshake), while AES ensures high-speed symmetric encryption for large data payloads, guaranteeing that sensitive customer information and billing data remain completely protected during transmission.
+* **Interactive React Dashboard:** A highly responsive administrative panel to monitor billing processes, visualize electricity consumption trends, and manage customer contracts in real-time.
+* **Advanced Hybrid Encryption (RSA + AES):** Implements a military-grade security layer. RSA is utilized for secure key exchange, while AES ensures high-speed symmetric encryption for large data payloads between the React Client and Node.js Server.
 * **Horizontal Database Fragmentation:** Dynamic routing of data to localized Oracle nodes based on the customer's branch code using advanced Oracle Triggers and DB Links.
 * **Smart Tiered Billing Algorithm:** An automated engine that calculates monthly bills combining government-standard tiered pricing and customized contract quotas.
 * **Historical Data Snapshotting:** Enforces strict accounting principles by permanently freezing rates and quotas (`kwDinhMuc`, `dongiaKW`) inside the Invoice records upon generation.
@@ -79,7 +82,7 @@ Make sure you have installed:
 | --- | --- |
 | `AutoService/` | Background workers and automation services (RabbitMQ consumers, scheduled tasks). |
 | `backend/` | API server and core business logic (includes RSA/AES encryption utilities). |
-| `frontend/` | Web client application. |
+| `frontend/` | **React SPA (Single Page Application) - UI components, state management, and API integration.** |
 | `setup/` | Infrastructure setup assets (configs, backups, and utilities). |
 | `images/` | Documentation images and diagrams. |
 
