@@ -1,4 +1,4 @@
-# ⚡ Electricity Service System - Distributed Database Architecture
+# ⚡ Electricity Service System - Distributed Enterprise Architecture
 
 ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 ![Node.js](https://img.shields.io/badge/Node.js-v18+-43853D?style=for-the-badge&logo=node.js&logoColor=white)
@@ -7,8 +7,10 @@
 ![RabbitMQ](https://img.shields.io/badge/RabbitMQ-Enabled-FF6600?style=for-the-badge&logo=rabbitmq&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-Caching-DC382D?style=for-the-badge&logo=redis&logoColor=white)
 ![Security](https://img.shields.io/badge/Security-RSA%20%2B%20AES-8A2BE2?style=for-the-badge&logo=springsecurity&logoColor=white)
+![Nginx](https://img.shields.io/badge/Nginx-Load_Balancer-009639?style=for-the-badge&logo=nginx&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
-Final project for the **Distributed Database Systems** course. This system simulates a high-performance electricity service management platform featuring a **horizontal fragmentation architecture**, integrated with an **Event-Driven Asynchronous Billing Engine**, **Real-time Data Replication**, and **Robust Hybrid Cryptography**.
+Final project for the **Distributed Database Systems** course. This system simulates a high-performance electricity service management platform featuring a **horizontal fragmentation architecture**, integrated with an **Event-Driven Asynchronous Billing Engine**, **Real-time Data Replication**, **Robust Hybrid Cryptography**, and a **ZeroTier-powered Global Load Balancer**.
 
 ---
 
@@ -23,18 +25,19 @@ Final project for the **Distributed Database Systems** course. This system simul
 
 ## 🏗️ System Architecture
 
-The core of this system relies on a hybrid distributed model to ensure load balancing, low latency, and data integrity across multiple geographical branches.
+The core of this system relies on a hybrid distributed model to ensure load balancing, low latency, failover protection, and data integrity across multiple geographical branches.
 
 > **Note:** Replace the image path below with your actual image file once uploaded to Github.
 > 
 ![System Architecture Diagram](./images/architecture.drawio.png) 
-*Figure 1: High-level System Architecture illustrating the Master-Slave Oracle nodes, RabbitMQ Broker, and API Gateway.*
+*Figure 1: High-level System Architecture illustrating the Master-Slave Oracle nodes, RabbitMQ Broker, Nginx Load Balancer, and API Gateway.*
 
 ### Data Flow Overview:
 1. **Client (Web/App):** Built with **React**, querying local branch databases directly (CN1, CN2, CN3, CN4) for lightning-fast read operations (Local Autonomy).
-2. **API Gateway (Backend):** Routes write-heavy operations to the central message queue.
-3. **RabbitMQ Broker:** Buffers incoming requests and events to prevent database lockups during peak times.
-4. **Automated Workers:** Listens to queues, processes complex tiered-billing logic, fetches cached electricity rates, and executes batch inserts.
+2. **Nginx Load Balancer:** Acts as the API Gateway. It uses the `least_conn` algorithm to route write-heavy traffic across multiple Node.js instances connected physically via **ZeroTier LAN**, ensuring zero downtime through automatic failover.
+3. **API Gateway (Backend):** Node.js servers process requests and route heavy background tasks to the central message queue.
+4. **RabbitMQ Broker:** Buffers incoming requests and events to prevent database lockups during peak times.
+5. **Automated Workers:** Listens to queues, processes complex tiered-billing logic, fetches cached electricity rates, and executes batch inserts.
 
 ---
 
@@ -46,12 +49,14 @@ The core of this system relies on a hybrid distributed model to ensure load bala
 * **NoSQL Database (Time-series):** MongoDB (Used for storing millions of IoT electrical meter readings).
 * **Caching Layer:** Redis v4 (For static state pricing policies).
 * **Message Broker:** RabbitMQ.
+* **Infrastructure & DevOps:** Nginx, Docker Compose, ZeroTier (for Physical Distribution & VPN).
 * **Security & Cryptography:** Hybrid Encryption (RSA Asymmetric + AES-256 Symmetric keys).
 
 ---
 
 ## ✨ Key Features
 
+* **High-Availability Load Balancing:** Containerized **Nginx** acting as a Reverse Proxy across a **ZeroTier VPN**, utilizing `least_conn` and passive health checks to provide automatic failover and seamless traffic distribution among distributed physical backend nodes.
 * **Interactive React Dashboard:** A highly responsive administrative panel to monitor billing processes, visualize electricity consumption trends, and manage customer contracts in real-time.
 * **Advanced Hybrid Encryption (RSA + AES):** Implements a military-grade security layer. RSA is utilized for secure key exchange, while AES ensures high-speed symmetric encryption for large data payloads between the React Client and Node.js Server.
 * **Horizontal Database Fragmentation:** Dynamic routing of data to localized Oracle nodes based on the customer's branch code using advanced Oracle Triggers and DB Links.
@@ -64,13 +69,20 @@ The core of this system relies on a hybrid distributed model to ensure load bala
 
 ## 🚀 Installation & Deployment
 
-### Prerequisites
+### 1. Prerequisites
 Make sure you have installed:
 - Node.js (v18 or higher)
 - Oracle Database (with properly configured DB Links for branches)
 - MongoDB locally or via Atlas
 - Redis server
 - RabbitMQ server
+- Docker Desktop (for Nginx Load Balancer)
+- ZeroTier (if deploying physical backend nodes)
+
+### 2. Clone the repository
+```bash
+git clone [https://github.com/your-username/electricity-billing-system.git](https://github.com/your-username/electricity-billing-system.git)
+cd electricity-billing-system
 
 
 
