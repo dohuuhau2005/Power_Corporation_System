@@ -1,0 +1,12 @@
+
+services:
+  nginx-lb:
+    image: nginx:alpine
+    container_name: dienluc-nginx-lb
+    ports:
+      - "80:80" # Cổng ra ngoài : Cổng bên trong container
+    volumes:
+      # Mount cái file config ở ngoài đè vào config mặc định của Nginx
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped
+    # network_mode: "host" # (Tùy chọn) Bật cái này lên nếu sếp xài Linux và mạng ZeroTier bị Docker chặn

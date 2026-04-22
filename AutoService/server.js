@@ -26,7 +26,7 @@ async function startApp() {
         await connectRedis();
         await syncBangGiaToRedis();
 
-        await billWorker();
+        //await billWorker();// TEST CHẠY TRƯỚC 1 LẦN CHO NÓ ẤM MÁY, CÒN LẠI SẼ CHẠY THEO CRON HẸN GIỜ
         // Mở Server API
         const PORT = process.env.port_serverReciver || 9999;
         app.listen(PORT, () => {

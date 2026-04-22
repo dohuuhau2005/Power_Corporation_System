@@ -13,7 +13,7 @@ const app = express();
 const corsOptions = {
     origin: function (origin, callback) {
         // Cho phép các request không có origin (như Postman) hoặc từ localhost:3000
-        const allowedOrigins = ['http://localhost:3000'];
+        const allowedOrigins = ['http://localhost:3000', 'http://192.168.1.10:3000', 'http://192.168.195.89:3000', 'http://127.0.0.1:3000'];
         if (!origin || allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
@@ -107,7 +107,7 @@ app.use('/iot', require('./src/IOT/ElectricMeter'));
 // ==================================================================
 
 const PORT = process.env.port_serverNode || 9999;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log("========================================");
     console.log(`🚀 Server is running on port ${PORT}`);
     console.log(`🔗 Access at: http://localhost:${PORT}`);

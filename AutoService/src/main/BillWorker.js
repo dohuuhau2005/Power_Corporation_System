@@ -8,10 +8,10 @@ const { redisClient } = require('../config/Redis');
 const calculateElectricBill = require('../component/Bill');
 async function BillWorker() {
     // 1. CHẶN NGÀY
-    // if (new Date().getDate() !== 1) {
-    //     console.log("Hôm nay chưa phải ngày 1, chưa chốt sổ được đâu!");
-    //     return;
-    // }
+    if (new Date().getDate() !== 1) {
+        console.log("Hôm nay chưa phải ngày 1, chưa chốt sổ được đâu!");
+        return;
+    }
     const bangGiaEVN = await getBangGiaFromRedis();
 
     // 2. XỬ LÝ THỜI GIAN THÔNG MINH
